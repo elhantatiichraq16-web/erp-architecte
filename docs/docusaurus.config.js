@@ -13,13 +13,14 @@ const config = {
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
-  url: 'http://localhost:3000',
+  url: 'https://elhantatiichraq16-web.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
-  baseUrl: '/',
+  baseUrl: '/erp-architecte/',
 
-  // GitHub pages deployment config (optional)
-  organizationName: 'erp-architecte',
-  projectName: 'erp-architecte-docs',
+  // GitHub pages deployment config
+  organizationName: 'elhantatiichraq16-web',
+  projectName: 'erp-architecte',
+  trailingSlash: false,
 
   onBrokenLinks: 'warn',
   onBrokenMarkdownLinks: 'warn',
