@@ -724,18 +724,13 @@
             <div class="sidebar-user-avatar">
                 {{ app.user.userIdentifier|first|upper }}
             </div>
-            <div>
-                <div class="sidebar-user-name">{{ app.user.userIdentifier }}</div>
+            <div style="flex:1">
+                <div class="sidebar-user-name">{{ app.user.nom ?? app.user.userIdentifier }}</div>
                 <div class="sidebar-user-role">Architecte</div>
             </div>
-        </div>
-        {% else %}
-        <div class="sidebar-user">
-            <div class="sidebar-user-avatar"><i class="bi bi-person"></i></div>
-            <div>
-                <div class="sidebar-user-name">Invité</div>
-                <div class="sidebar-user-role">Non connecté</div>
-            </div>
+            <a href="{{ path('app_logout') }}" title="Deconnexion" style="color:rgba(255,255,255,.6);font-size:18px;text-decoration:none;">
+                <i class="bi bi-box-arrow-right"></i>
+            </a>
         </div>
         {% endif %}
     </div>
