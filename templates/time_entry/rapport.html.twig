@@ -1,0 +1,192 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Rapport de temps{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{{ path('app_time_index') }}">Saisies de temps</a></li>
+    <li class="breadcrumb-item active">Rapport</li>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_time_new') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Nouvelle saisie
+    </a>
+{% endblock %}
+
+{% block body %}
+{# ── Filter form ── #}
+<div class="card rounded-4 shadow-sm mb-4">
+    <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-funnel me-2 text-primary"></i> Filtres
+    </div>
+    <div class="card-body">
+        <form method="GET" action="{{ path('app_time_rapport') }}" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Projet</label>
+                <select name="project" class="form-select">
+                    <option value="">Tous les projets</option>
+                    {% for project in projects is defined ? projects : [] %}
+                        <option value="{{ project.id }}"
+                                {{ filters.project is defined and filters.project == project.id ? 'selected' : '' }}>
+                            {{ project.reference }} — {{ project.nom }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold">Collaborateur</label>
+                <select name="collaborator" class="form-select">
+                    <option value="">Tous les collaborateurs</option>
+                    {% for collab in collaborators is defined ? collaborators : [] %}
+                        <option value="{{ collab.id }}"
+                                {{ filters.collaborator is defined and filters.collaborator == collab.id ? 'selected' : '' }}>
+                            {{ collab }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Mois</label>
+                <select name="month" class="form-select">
+                    <option value="">Tous les mois</option>
+                    {% for m in 1..12 %}
+                        {% set mLabel = ['Janvier','Février','Mars','Avril','Mai','Juin',
+                                        'Juillet','Août','Septembre','Octobre','Novembre','Décembre'][m-1] %}
+                        <option value="{{ m }}"
+                                {{ filters.month is defined and filters.month == m ? 'selected' : '' }}>
+                            {{ mLabel }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold">Année</label>
+                <select name="year" class="form-select">
+                    {% for y in (('now'|date('Y') - 2)..('now'|date('Y') + 1)) %}
+                        <option value="{{ y }}"
+                                {{ filters.year is defined and filters.year == y ? 'selected' : '' }}>
+                            {{ y }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary flex-grow-1">
+                    <i class="bi bi-search me-1"></i> Filtrer
+                </button>
+                <a href="{{ path('app_time_rapport') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{# ── Summary cards ── #}
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card rounded-4 shadow-sm border-0 bg-primary text-white">
+            <div class="card-body py-3 px-4">
+                <div class="small text-white-50 mb-1">Total heures</div>
+                <div class="fs-3 fw-bold">{{ summary.totalHeures is defined ? summary.totalHeures|number_format(1, ',', '.') : '0,0' }} h</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card rounded-4 shadow-sm border-0 bg-success text-white">
+            <div class="card-body py-3 px-4">
+                <div class="small text-white-50 mb-1">Heures facturables</div>
+                <div class="fs-3 fw-bold">{{ summary.totalFacturables is defined ? summary.totalFacturables|number_format(1, ',', '.') : '0,0' }} h</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card rounded-4 shadow-sm border-0 bg-info text-white">
+            <div class="card-body py-3 px-4">
+                <div class="small text-white-50 mb-1">Coût total</div>
+                <div class="fs-3 fw-bold">{{ summary.coutTotal is defined ? summary.coutTotal|number_format(2, ',', '.') : '0,00' }} €</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card rounded-4 shadow-sm border-0 bg-warning text-dark">
+            <div class="card-body py-3 px-4">
+                <div class="small opacity-75 mb-1">Nombre de saisies</div>
+                <div class="fs-3 fw-bold">{{ entries is defined ? entries|length : 0 }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── Detailed table ── #}
+<div class="card rounded-4 shadow-sm">
+    <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-table me-2"></i> Détail des saisies
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Collaborateur</th>
+                        <th>Projet</th>
+                        <th>Phase</th>
+                        <th class="text-end">Heures</th>
+                        <th class="text-end">Coût</th>
+                        <th>Description</th>
+                        <th class="text-center">Facturable</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for entry in entries is defined ? entries : [] %}
+                    <tr>
+                        <td>{{ entry.date|date('d/m/Y') }}</td>
+                        <td>{{ entry.collaborator }}</td>
+                        <td>
+                            <a href="{{ path('app_project_show', {id: entry.project.id}) }}"
+                               class="text-decoration-none text-muted">
+                                {{ entry.project.reference }}
+                            </a>
+                        </td>
+                        <td>{{ entry.phase ?? '—' }}</td>
+                        <td class="text-end fw-semibold">{{ entry.heures|number_format(2, ',', '.') }} h</td>
+                        <td class="text-end">{{ entry.cout|number_format(2, ',', '.') }} €</td>
+                        <td class="text-muted">{{ entry.description ?? '—' }}</td>
+                        <td class="text-center">
+                            {% if entry.facturable %}
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                            {% else %}
+                                <i class="bi bi-x-circle text-muted"></i>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            Aucune saisie pour les critères sélectionnés.
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+                {% if entries is defined and entries|length > 0 %}
+                <tfoot class="table-light fw-semibold">
+                    {% set totalH = 0 %}
+                    {% set totalC = 0 %}
+                    {% for entry in entries %}
+                        {% set totalH = totalH + entry.heures %}
+                        {% set totalC = totalC + entry.cout %}
+                    {% endfor %}
+                    <tr>
+                        <td colspan="4">Total</td>
+                        <td class="text-end fw-bold">{{ totalH|number_format(2, ',', '.') }} h</td>
+                        <td class="text-end fw-bold">{{ totalC|number_format(2, ',', '.') }} €</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

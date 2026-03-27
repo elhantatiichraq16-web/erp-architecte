@@ -1,0 +1,109 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dépenses{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item active">Dépenses</li>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_expense_new') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Nouvelle dépense
+    </a>
+{% endblock %}
+
+{% block body %}
+
+{# ── Category badge map ── #}
+{% set catBadge = {
+    'deplacements':  'bg-info text-dark',
+    'impressions':   'bg-warning text-dark',
+    'sous_traitance':'bg-danger',
+    'logiciels':     'bg-primary',
+    'fournitures':   'bg-secondary',
+    'divers':        'bg-dark'
+} %}
+
+<div class="card rounded-4 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date</th>
+                        <th>Projet</th>
+                        <th>Catégorie</th>
+                        <th class="text-end">Montant</th>
+                        <th>Description</th>
+                        <th>Fournisseur</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for expense in expenses %}
+                    <tr>
+                        <td>{{ expense.date|date('d/m/Y') }}</td>
+                        <td>
+                            <a href="{{ path('app_project_show', {id: expense.project.id}) }}"
+                               class="text-decoration-none text-muted">
+                                {{ expense.project.reference }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="badge {{ catBadge[expense.categorie] ?? 'bg-secondary' }}">
+                                {{ expense.categorieLabel }}
+                            </span>
+                        </td>
+                        <td class="text-end fw-semibold">
+                            {{ expense.montant|number_format(2, ',', '.') }} €
+                        </td>
+                        <td class="text-muted">{{ expense.description ?? '—' }}</td>
+                        <td>{{ expense.fournisseur ?? '—' }}</td>
+                        <td class="text-end">
+                            <a href="{{ path('app_expense_edit', {id: expense.id}) }}"
+                               class="btn btn-sm btn-outline-primary" title="Modifier">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="POST"
+                                  action="{{ path('app_expense_delete', {id: expense.id}) }}"
+                                  class="d-inline">
+                                <input type="hidden" name="_token"
+                                       value="{{ csrf_token('delete_expense_' ~ expense.id) }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer"
+                                        onclick="return confirm('Confirmer la suppression ?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-cash fs-2 d-block mb-2"></i>
+                            Aucune dépense enregistrée.
+                            <a href="{{ path('app_expense_new') }}" class="ms-2">Ajouter une dépense</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+                {% if expenses|length > 0 %}
+                <tfoot class="table-light">
+                    {% set total = 0 %}
+                    {% for expense in expenses %}
+                        {% set total = total + expense.montant %}
+                    {% endfor %}
+                    <tr>
+                        <td colspan="3" class="fw-semibold">Total</td>
+                        <td class="text-end fw-bold">{{ total|number_format(2, ',', '.') }} €</td>
+                        <td colspan="3"></td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-white text-muted small py-2 px-3">
+        {{ expenses|length }} dépense{{ expenses|length != 1 ? 's' : '' }} au total
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier client — {{ client.displayName }}{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{{ path('app_client_index') }}">Clients</a></li>
+    <li class="breadcrumb-item">
+        <a href="{{ path('app_client_show', {id: client.id}) }}">{{ client.displayName }}</a>
+    </li>
+    <li class="breadcrumb-item active">Modifier</li>
+{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-xl-8">
+        <div class="card rounded-4 shadow-sm">
+            <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
+                <h5 class="mb-0 fw-semibold">
+                    <i class="bi bi-pencil me-2 text-primary"></i> Modifier — {{ client.displayName }}
+                </h5>
+                <a href="{{ path('app_client_show', {id: client.id}) }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-eye me-1"></i> Voir la fiche
+                </a>
+            </div>
+            <div class="card-body p-4">
+                {% include 'client/_form.html.twig' %}
+            </div>
+            <div class="card-footer bg-white border-top d-flex justify-content-between py-3 px-4">
+                <a href="{{ path('app_client_show', {id: client.id}) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Annuler
+                </a>
+                <button type="submit" form="{{ form.vars.id }}" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i> Enregistrer les modifications
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

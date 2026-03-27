@@ -1,0 +1,16 @@
+parameters:
+    uploads_directory: '%kernel.project_dir%/public/uploads/documents'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+        bind:
+            string $uploadsDirectory: '%uploads_directory%'
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'

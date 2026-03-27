@@ -1,0 +1,108 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Devis{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item active">Devis</li>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_quote_new') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Nouveau devis
+    </a>
+{% endblock %}
+
+{% block body %}
+<div class="card rounded-4 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Numéro</th>
+                        <th>Client</th>
+                        <th>Objet</th>
+                        <th>Date</th>
+                        <th>Validité</th>
+                        <th>Statut</th>
+                        <th class="text-end">Total TTC</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for quote in quotes %}
+                    <tr>
+                        <td>
+                            <a href="{{ path('app_quote_show', {id: quote.id}) }}"
+                               class="font-monospace text-decoration-none fw-semibold text-dark">
+                                {{ quote.numero }}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{{ path('app_client_show', {id: quote.client.id}) }}"
+                               class="text-decoration-none text-muted">
+                                {{ quote.client.displayName }}
+                            </a>
+                        </td>
+                        <td>{{ quote.objet }}</td>
+                        <td>{{ quote.dateCreation|date('d/m/Y') }}</td>
+                        <td>
+                            {% if quote.dateValidite %}
+                                {{ quote.dateValidite|date('d/m/Y') }}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {{ quote.statutBadgeClass }}">
+                                {{ quote.statutLabel }}
+                            </span>
+                        </td>
+                        <td class="text-end fw-semibold">
+                            {{ quote.totalTTC|number_format(2, ',', '.') }} €
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ path('app_quote_show', {id: quote.id}) }}"
+                               class="btn btn-sm btn-outline-secondary" title="Voir">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{ path('app_quote_edit', {id: quote.id}) }}"
+                               class="btn btn-sm btn-outline-primary" title="Modifier">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% if quote.statut == 'accepte' %}
+                                <a href="{{ path('app_quote_convert', {id: quote.id}) }}"
+                                   class="btn btn-sm btn-success" title="Convertir en facture">
+                                    <i class="bi bi-arrow-right-circle me-1"></i>Facture
+                                </a>
+                            {% endif %}
+                            <form method="POST"
+                                  action="{{ path('app_quote_delete', {id: quote.id}) }}"
+                                  class="d-inline">
+                                <input type="hidden" name="_token"
+                                       value="{{ csrf_token('delete_quote_' ~ quote.id) }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer"
+                                        onclick="return confirm('Confirmer la suppression ?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-file-text fs-2 d-block mb-2"></i>
+                            Aucun devis trouvé.
+                            <a href="{{ path('app_quote_new') }}" class="ms-2">Créer le premier devis</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-white text-muted small py-2 px-3">
+        {{ quotes|length }} devis au total
+    </div>
+</div>
+{% endblock %}

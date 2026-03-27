@@ -1,0 +1,144 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Lint & Static Analysis ────────────────────────
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: intl, mbstring, pdo_mysql, zip, gd
+          tools: composer:v2
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist
+
+      - name: PHP Syntax Check
+        run: find src/ -name "*.php" -exec php -l {} \;
+
+  # ── Build Assets ──────────────────────────────────
+  build-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Build assets
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-assets
+          path: public/build/
+
+  # ── Build Docker Image ────────────────────────────
+  build-docker:
+    runs-on: ubuntu-latest
+    needs: [lint, build-assets]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-assets
+          path: public/build/
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build PHP image
+        run: docker build -t erp-architecte-php:${{ github.sha }} ./docker/php
+
+      - name: Docker Compose config check
+        run: docker compose config
+
+  # ── E2E Tests ────────────────────────────────────
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [build-docker]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-assets
+          path: public/build/
+
+      - name: Start services
+        run: docker compose up -d
+
+      - name: Wait for MySQL healthy
+        run: |
+          for i in $(seq 1 30); do
+            docker compose exec -T mysql mysqladmin ping -h localhost -u root -proot_secret && break
+            sleep 2
+          done
+
+      - name: Setup app
+        run: |
+          docker compose exec -T php composer install --no-interaction --no-scripts
+          docker compose exec -T php php bin/console doctrine:schema:create --no-interaction
+          docker compose exec -T php php bin/console doctrine:fixtures:load --no-interaction
+          docker compose exec -T php php bin/console cache:clear
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
+        working-directory: ./e2e
+        run: npm ci && npx playwright install chromium
+
+      - name: Run E2E tests
+        working-directory: ./e2e
+        run: npm test
+        env:
+          BASE_URL: http://localhost:8080
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/test-results/
+
+  # ── Deploy (only on main) ─────────────────────────
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [e2e]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-assets
+          path: public/build/
+
+      - name: Deploy notification
+        run: echo "🚀 Ready to deploy! Configure your deployment target here."
+        # TODO: Add your deployment steps (SSH, Railway, Render, Coolify, etc.)

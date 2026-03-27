@@ -1,0 +1,53 @@
+{{ form_start(form, {attr: {novalidate: 'novalidate', class: 'needs-validation', enctype: 'multipart/form-data'}}) }}
+
+<div class="row g-3">
+    <div class="col-md-8">
+        {{ form_label(form.nom, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.nom, {attr: {class: 'form-control', placeholder: 'Nom du document'}}) }}
+        {{ form_errors(form.nom) }}
+    </div>
+
+    <div class="col-md-4">
+        {{ form_label(form.version, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        <div class="input-group">
+            <span class="input-group-text text-muted">v</span>
+            {{ form_widget(form.version, {attr: {class: 'form-control', placeholder: '1.0'}}) }}
+        </div>
+        {{ form_errors(form.version) }}
+    </div>
+
+    <div class="col-md-6">
+        {{ form_label(form.project, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.project, {attr: {class: 'form-select'}}) }}
+        {{ form_errors(form.project) }}
+    </div>
+
+    <div class="col-md-6">
+        {{ form_label(form.categorie, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.categorie, {attr: {class: 'form-select'}}) }}
+        {{ form_errors(form.categorie) }}
+    </div>
+
+    {% if form.fichier is defined %}
+    <div class="col-12">
+        {{ form_label(form.fichier, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.fichier, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.fichier) }}
+        <div class="form-text">Formats acceptés : PDF, DWG, DXF, JPG, PNG, DOCX, XLSX, ZIP…</div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        {{ form_label(form.nomFichier, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.nomFichier, {attr: {class: 'form-control', placeholder: 'nom_fichier.pdf'}}) }}
+        {{ form_errors(form.nomFichier) }}
+    </div>
+    {% endif %}
+
+    <div class="col-12">
+        {{ form_label(form.notes, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.notes, {attr: {class: 'form-control', rows: 3}}) }}
+        {{ form_errors(form.notes) }}
+    </div>
+</div>
+
+{{ form_end(form) }}

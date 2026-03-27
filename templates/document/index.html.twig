@@ -1,0 +1,120 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Documents{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item active">Documents</li>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_document_new') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Nouveau document
+    </a>
+{% endblock %}
+
+{% block body %}
+
+{# Category badge map #}
+{% set catBadge = {
+    'plans':          'bg-primary',
+    'cctp':           'bg-info text-dark',
+    'pv_chantier':    'bg-warning text-dark',
+    'courriers':      'bg-secondary',
+    'administratif':  'bg-dark',
+    'photos':         'bg-success',
+    'divers':         'bg-light text-dark border'
+} %}
+
+{# Icon map by category #}
+{% set catIcon = {
+    'plans':          'bi-rulers',
+    'cctp':           'bi-file-earmark-text',
+    'pv_chantier':    'bi-clipboard-check',
+    'courriers':      'bi-envelope',
+    'administratif':  'bi-briefcase',
+    'photos':         'bi-image',
+    'divers':         'bi-file-earmark'
+} %}
+
+<div class="card rounded-4 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Nom</th>
+                        <th>Projet</th>
+                        <th>Catégorie</th>
+                        <th>Version</th>
+                        <th>Date</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for document in documents %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi {{ catIcon[document.categorie] ?? 'bi-file-earmark' }} fs-5 text-muted"></i>
+                                <div>
+                                    <div class="fw-semibold">{{ document.nom }}</div>
+                                    <small class="text-muted font-monospace">{{ document.nomFichier }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <a href="{{ path('app_project_show', {id: document.project.id}) }}"
+                               class="text-decoration-none text-muted">
+                                {{ document.project.reference }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="badge {{ catBadge[document.categorie] ?? 'bg-secondary' }}">
+                                {{ document.categorieLabel }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if document.version %}
+                                <span class="badge bg-light text-dark border font-monospace">
+                                    v{{ document.version }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ document.createdAt|date('d/m/Y') }}</td>
+                        <td class="text-end">
+                            <a href="{{ path('app_document_edit', {id: document.id}) }}"
+                               class="btn btn-sm btn-outline-primary" title="Modifier">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="POST"
+                                  action="{{ path('app_document_delete', {id: document.id}) }}"
+                                  class="d-inline">
+                                <input type="hidden" name="_token"
+                                       value="{{ csrf_token('delete_document_' ~ document.id) }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer"
+                                        onclick="return confirm('Confirmer la suppression ?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-folder-x fs-2 d-block mb-2"></i>
+                            Aucun document enregistré.
+                            <a href="{{ path('app_document_new') }}" class="ms-2">Ajouter un document</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-white text-muted small py-2 px-3">
+        {{ documents|length }} document{{ documents|length != 1 ? 's' : '' }} au total
+    </div>
+</div>
+{% endblock %}

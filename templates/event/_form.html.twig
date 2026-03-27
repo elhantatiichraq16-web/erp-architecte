@@ -1,0 +1,60 @@
+{{ form_start(form, {attr: {novalidate: 'novalidate', class: 'needs-validation'}}) }}
+
+<div class="row g-3">
+    <div class="col-12">
+        {{ form_label(form.titre, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.titre, {attr: {class: 'form-control', placeholder: 'Titre de l\'événement'}}) }}
+        {{ form_errors(form.titre) }}
+    </div>
+
+    <div class="col-md-6">
+        {{ form_label(form.type, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.type, {attr: {class: 'form-select'}}) }}
+        {{ form_errors(form.type) }}
+    </div>
+
+    <div class="col-md-6">
+        {{ form_label(form.project, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.project, {attr: {class: 'form-select'}}) }}
+        {{ form_errors(form.project) }}
+    </div>
+
+    <div class="col-md-6">
+        {{ form_label(form.dateDebut, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.dateDebut, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.dateDebut) }}
+    </div>
+
+    <div class="col-md-6">
+        {{ form_label(form.dateFin, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.dateFin, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.dateFin) }}
+    </div>
+
+    <div class="col-md-8">
+        {{ form_label(form.lieu, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.lieu, {attr: {class: 'form-control', placeholder: 'Adresse ou lieu'}}) }}
+        {{ form_errors(form.lieu) }}
+    </div>
+
+    <div class="col-md-2">
+        {{ form_label(form.couleur, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.couleur, {attr: {class: 'form-control form-control-color w-100', type: 'color'}}) }}
+        {{ form_errors(form.couleur) }}
+    </div>
+
+    <div class="col-md-2 d-flex align-items-end">
+        <div class="form-check form-switch mb-2">
+            {{ form_widget(form.allDay, {attr: {class: 'form-check-input', role: 'switch', id: 'allDay-toggle'}}) }}
+            {{ form_label(form.allDay, null, {label_attr: {class: 'form-check-label fw-semibold', for: 'allDay-toggle'}}) }}
+        </div>
+    </div>
+
+    <div class="col-12">
+        {{ form_label(form.description, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.description, {attr: {class: 'form-control', rows: 4}}) }}
+        {{ form_errors(form.description) }}
+    </div>
+</div>
+
+{{ form_end(form) }}

@@ -1,0 +1,107 @@
+version: "3.8"
+
+services:
+  # ─── PHP-FPM ───────────────────────────────────────
+  php:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    container_name: erp_php
+    restart: unless-stopped
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: 1
+      DATABASE_URL: "mysql://erp_user:erp_secret@mysql:3306/erp_architecte?serverVersion=8.0&charset=utf8mb4"
+    networks:
+      - erp_network
+
+  # ─── NGINX ─────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: erp_nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php
+    networks:
+      - erp_network
+
+  # ─── MySQL 8 ───────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: erp_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_secret
+      MYSQL_DATABASE: erp_architecte
+      MYSQL_USER: erp_user
+      MYSQL_PASSWORD: erp_secret
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_secret"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - erp_network
+
+  # ─── phpMyAdmin ────────────────────────────────────
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: erp_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: erp_user
+      PMA_PASSWORD: erp_secret
+      UPLOAD_LIMIT: 64M
+    depends_on:
+      - mysql
+    networks:
+      - erp_network
+
+  # ─── Docusaurus (Documentation) ────────────────────
+  docs:
+    image: node:20-alpine
+    container_name: erp_docs
+    working_dir: /app
+    volumes:
+      - ./docs:/app
+    ports:
+      - "3000:3000"
+    command: sh -c "npm install && npx docusaurus start --host 0.0.0.0 --port 3000"
+    networks:
+      - erp_network
+
+  # ─── Mailpit (Email testing) ───────────────────────
+  mailpit:
+    image: axllent/mailpit
+    container_name: erp_mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      - erp_network
+
+volumes:
+  mysql_data:
+
+networks:
+  erp_network:
+    driver: bridge

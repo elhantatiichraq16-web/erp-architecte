@@ -1,0 +1,196 @@
+{{ form_start(form, {attr: {novalidate: 'novalidate', id: 'invoice-form'}}) }}
+
+<div class="row g-3">
+    <div class="col-md-6">
+        {{ form_label(form.client, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.client, {attr: {class: 'form-select'}}) }}
+        {{ form_errors(form.client) }}
+    </div>
+
+    <div class="col-md-6">
+        {{ form_label(form.project, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.project, {attr: {class: 'form-select'}}) }}
+        {{ form_errors(form.project) }}
+    </div>
+
+    <div class="col-12">
+        {{ form_label(form.objet, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.objet, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.objet) }}
+    </div>
+
+    <div class="col-md-3">
+        {{ form_label(form.dateEmission, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.dateEmission, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.dateEmission) }}
+    </div>
+
+    <div class="col-md-3">
+        {{ form_label(form.dateEcheance, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.dateEcheance, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.dateEcheance) }}
+    </div>
+
+    <div class="col-md-2">
+        {{ form_label(form.tauxTVA, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        <div class="input-group">
+            {{ form_widget(form.tauxTVA, {attr: {class: 'form-control', id: 'inv-tauxTVA'}}) }}
+            <span class="input-group-text">%</span>
+        </div>
+        {{ form_errors(form.tauxTVA) }}
+    </div>
+
+    <div class="col-md-2">
+        {{ form_label(form.statut, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.statut, {attr: {class: 'form-select'}}) }}
+        {{ form_errors(form.statut) }}
+    </div>
+
+</div>
+
+{# Lines collection #}
+<div class="mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="text-uppercase text-muted fw-semibold small mb-0">
+            <i class="bi bi-list-ul me-1"></i> Lignes de facturation
+        </h6>
+        <button type="button" id="inv-add-line" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-plus-lg me-1"></i> Ajouter une ligne
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle" id="inv-lines-table">
+            <thead class="table-light">
+                <tr>
+                    <th style="min-width:220px;">Désignation</th>
+                    <th style="width:80px;">Qté</th>
+                    <th style="width:90px;">Unité</th>
+                    <th style="width:130px;">Prix HT</th>
+                    <th style="width:130px;">Montant HT</th>
+                    <th style="width:50px;"></th>
+                </tr>
+            </thead>
+            <tbody id="inv-lines-collection"
+                   data-prototype="{{ form_widget(form.lines.vars.prototype)|e('html_attr') }}">
+            {% for line in form.lines %}
+                <tr class="inv-line-row">
+                    <td>{{ form_widget(line.designation, {attr: {class: 'form-control form-control-sm inv-line-designation'}}) }}</td>
+                    <td>{{ form_widget(line.quantite, {attr: {class: 'form-control form-control-sm inv-line-qty', step: '0.01'}}) }}</td>
+                    <td>{{ form_widget(line.unite, {attr: {class: 'form-control form-control-sm'}}) }}</td>
+                    <td>{{ form_widget(line.prixUnitaireHT, {attr: {class: 'form-control form-control-sm inv-line-price', step: '0.01'}}) }}</td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm inv-line-total bg-light"
+                               readonly value="{{ line.vars.data.montantHT ?? '' }}">
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-danger inv-remove-line">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot class="table-light">
+                <tr>
+                    <td colspan="4" class="text-end fw-semibold">Total HT</td>
+                    <td id="inv-footer-ht" class="fw-semibold text-end">— €</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="text-end fw-semibold">TVA</td>
+                    <td id="inv-footer-tva" class="fw-semibold text-end">— €</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="text-end fw-bold fs-6">Total TTC</td>
+                    <td id="inv-footer-ttc" class="fw-bold text-primary fs-6 text-end">— €</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+{{ form_end(form) }}
+
+<script>
+(function () {
+    const tbody  = document.getElementById('inv-lines-collection');
+    const proto  = tbody.dataset.prototype;
+    let   idx    = tbody.querySelectorAll('.inv-line-row').length;
+    const tauxEl = document.getElementById('inv-tauxTVA');
+
+    function fmt(n) { return n.toFixed(2).replace('.', ',') + ' €'; }
+
+    function recalc() {
+        let ht = 0;
+        tbody.querySelectorAll('.inv-line-row').forEach(function (row) {
+            const qty   = parseFloat(row.querySelector('.inv-line-qty')?.value)   || 0;
+            const price = parseFloat(row.querySelector('.inv-line-price')?.value) || 0;
+            const sub   = qty * price;
+            const tot   = row.querySelector('.inv-line-total');
+            if (tot) tot.value = sub.toFixed(2);
+            ht += sub;
+        });
+        const taux = parseFloat(tauxEl?.value) || 0;
+        const tva  = ht * taux / 100;
+        document.getElementById('inv-footer-ht').textContent  = fmt(ht);
+        document.getElementById('inv-footer-tva').textContent = fmt(tva);
+        document.getElementById('inv-footer-ttc').textContent = fmt(ht + tva);
+    }
+
+    function buildRow(html) {
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        const tr = document.createElement('tr');
+        tr.className = 'inv-line-row';
+        const fieldMap = [
+            ['designation','inv-line-designation'],
+            ['quantite','inv-line-qty'],
+            ['unite',''],
+            ['prixUnitaireHT','inv-line-price']
+        ];
+        fieldMap.forEach(function ([fname, cls]) {
+            const td    = document.createElement('td');
+            const field = div.querySelector(`[name*="[${fname}]"]`);
+            if (field) {
+                field.className = `form-control form-control-sm${cls ? ' '+cls : ''}`;
+                field.setAttribute('step', '0.01');
+                td.appendChild(field);
+            }
+            tr.appendChild(td);
+        });
+        const tdTot = document.createElement('td');
+        tdTot.innerHTML = '<input type="text" class="form-control form-control-sm inv-line-total bg-light" readonly>';
+        tr.appendChild(tdTot);
+        const tdDel = document.createElement('td');
+        tdDel.innerHTML = '<button type="button" class="btn btn-sm btn-outline-danger inv-remove-line"><i class="bi bi-trash"></i></button>';
+        tr.appendChild(tdDel);
+        return tr;
+    }
+
+    document.getElementById('inv-add-line').addEventListener('click', function () {
+        const html = proto.replace(/__name__/g, idx++);
+        tbody.appendChild(buildRow(html));
+        recalc();
+    });
+
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('.inv-remove-line')) {
+            e.target.closest('.inv-line-row').remove();
+            recalc();
+        }
+    });
+
+    document.addEventListener('input', function (e) {
+        if (e.target.classList.contains('inv-line-qty') ||
+            e.target.classList.contains('inv-line-price') ||
+            e.target === tauxEl) {
+            recalc();
+        }
+    });
+
+    recalc();
+}());
+</script>

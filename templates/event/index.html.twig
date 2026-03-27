@@ -1,0 +1,283 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Calendrier{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item active">Calendrier</li>
+{% endblock %}
+
+{% block page_actions %}
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#eventModal">
+        <i class="bi bi-plus-lg me-1"></i> Nouvel événement
+    </button>
+{% endblock %}
+
+{% block body %}
+{# ── Calendar container ── #}
+<div class="card rounded-4 shadow-sm">
+    <div class="card-body p-3" style="min-height:700px;">
+        <div id="calendar" style="height:680px;"></div>
+    </div>
+</div>
+
+{# ── Event Create/Edit Modal ── #}
+<div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content rounded-4 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-semibold" id="eventModalLabel">
+                    <i class="bi bi-calendar-plus me-2 text-primary"></i>
+                    <span id="modal-title-text">Nouvel événement</span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-3" id="modal-form-container">
+                {# Form loaded via AJAX or inline #}
+                <form id="event-quick-form" method="POST" action="{{ path('app_event_new') }}">
+                    <input type="hidden" name="_token" id="event-token"
+                           value="{{ csrf_token('create_event') }}">
+                    <input type="hidden" name="event[allDay]" id="event-allDay" value="0">
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Titre <span class="text-danger">*</span></label>
+                            <input type="text" name="event[titre]" id="event-titre"
+                                   class="form-control" required placeholder="Titre de l'événement">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Date de début <span class="text-danger">*</span></label>
+                            <input type="datetime-local" name="event[dateDebut]" id="event-dateDebut"
+                                   class="form-control" required>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Date de fin</label>
+                            <input type="datetime-local" name="event[dateFin]" id="event-dateFin"
+                                   class="form-control">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Type</label>
+                            <select name="event[type]" class="form-select">
+                                {% for label, value in constant('App\\Entity\\Event::TYPES') %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Projet</label>
+                            <select name="event[project]" class="form-select">
+                                <option value="">— Aucun projet —</option>
+                                {% for project in projects is defined ? projects : [] %}
+                                    <option value="{{ project.id }}">
+                                        {{ project.reference }} — {{ project.nom }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Lieu</label>
+                            <input type="text" name="event[lieu]" id="event-lieu"
+                                   class="form-control" placeholder="Adresse ou lieu">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Couleur</label>
+                            <input type="color" name="event[couleur]" id="event-couleur"
+                                   class="form-control form-control-color w-100" value="#3B82F6">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Description</label>
+                            <textarea name="event[description]" id="event-description"
+                                      class="form-control" rows="3"
+                                      placeholder="Détails de l'événement…"></textarea>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" id="event-allDayCheck"
+                                       onchange="document.getElementById('event-allDay').value = this.checked ? '1' : '0'">
+                                <label class="form-check-label fw-semibold" for="event-allDayCheck">
+                                    Journée entière
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <a id="event-edit-link" href="#" class="btn btn-outline-secondary d-none">
+                    <i class="bi bi-pencil me-1"></i> Modifier (page complète)
+                </a>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="submit" form="event-quick-form" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i> Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── Event Detail Modal ── #}
+<div class="modal fade" id="eventDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-semibold" id="detail-title">—</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <span class="text-muted small">Type :</span>
+                        <span id="detail-type" class="ms-2 fw-semibold"></span>
+                    </li>
+                    <li class="mb-2">
+                        <span class="text-muted small">Date :</span>
+                        <span id="detail-date" class="ms-2"></span>
+                    </li>
+                    <li class="mb-2" id="detail-lieu-row">
+                        <span class="text-muted small">Lieu :</span>
+                        <span id="detail-lieu" class="ms-2"></span>
+                    </li>
+                    <li id="detail-desc-row">
+                        <span class="text-muted small">Description :</span>
+                        <p id="detail-desc" class="ms-2 mb-0 mt-1"></p>
+                    </li>
+                </ul>
+            </div>
+            <div class="modal-footer border-0">
+                <a id="detail-edit-btn" href="#" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-pencil me-1"></i> Modifier
+                </a>
+                <form method="POST" id="detail-delete-form" class="d-inline">
+                    <input type="hidden" name="_token" id="detail-delete-token">
+                    <button type="submit" class="btn btn-outline-danger btn-sm"
+                            onclick="return confirm('Confirmer la suppression ?')">
+                        <i class="bi bi-trash me-1"></i> Supprimer
+                    </button>
+                </form>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/locales/fr.global.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const calEl = document.getElementById('calendar');
+
+    const calendar = new FullCalendar.Calendar(calEl, {
+        locale: 'fr',
+        initialView: 'dayGridMonth',
+        height: '100%',
+        headerToolbar: {
+            left:   'prev,next today',
+            center: 'title',
+            right:  'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+        },
+        buttonText: {
+            today:     "Aujourd'hui",
+            month:     'Mois',
+            week:      'Semaine',
+            day:       'Jour',
+            list:      'Liste'
+        },
+        navLinks:     true,
+        selectable:   true,
+        editable:     true,
+        eventResizableFromStart: true,
+
+        {# Load events via JSON endpoint #}
+        events: '{{ path('app_event_api') }}',
+
+        {# Click on empty slot → open create modal #}
+        select: function (info) {
+            const modal  = new bootstrap.Modal(document.getElementById('eventModal'));
+            const dStart = info.startStr.substring(0, 16);
+            const dEnd   = info.allDay ? '' : info.endStr.substring(0, 16);
+            document.getElementById('event-dateDebut').value = dStart;
+            document.getElementById('event-dateFin').value   = dEnd;
+            document.getElementById('modal-title-text').textContent = 'Nouvel événement';
+            document.getElementById('event-edit-link').classList.add('d-none');
+            modal.show();
+        },
+
+        {# Click on event → show detail modal #}
+        eventClick: function (info) {
+            const ev    = info.event;
+            const props = ev.extendedProps;
+            const detailModal = new bootstrap.Modal(document.getElementById('eventDetailModal'));
+
+            document.getElementById('detail-title').textContent = ev.title;
+            document.getElementById('detail-type').textContent  = props.type ?? '';
+            document.getElementById('detail-date').textContent  =
+                ev.start ? ev.start.toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+
+            const lieuRow = document.getElementById('detail-lieu-row');
+            const lieuEl  = document.getElementById('detail-lieu');
+            if (props.lieu) { lieuEl.textContent = props.lieu; lieuRow.style.display = ''; }
+            else { lieuRow.style.display = 'none'; }
+
+            const descRow = document.getElementById('detail-desc-row');
+            const descEl  = document.getElementById('detail-desc');
+            if (props.description) { descEl.textContent = props.description; descRow.style.display = ''; }
+            else { descRow.style.display = 'none'; }
+
+            document.getElementById('detail-edit-btn').href = `/events/${ev.id}/edit`;
+            const delForm = document.getElementById('detail-delete-form');
+            delForm.action = `/events/${ev.id}/delete`;
+            document.getElementById('detail-delete-token').value = '';
+
+            detailModal.show();
+        },
+
+        {# Drag & drop update #}
+        eventDrop: function (info) {
+            fetch(`/events/${info.event.id}/update-date`, {
+                method:  'POST',
+                headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+                body:    JSON.stringify({
+                    start:  info.event.startStr,
+                    end:    info.event.endStr,
+                    allDay: info.event.allDay
+                })
+            })
+            .then(r => { if (!r.ok) { info.revert(); } })
+            .catch(() => info.revert());
+        },
+
+        {# Resize update #}
+        eventResize: function (info) {
+            fetch(`/events/${info.event.id}/update-date`, {
+                method:  'POST',
+                headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+                body:    JSON.stringify({
+                    start:  info.event.startStr,
+                    end:    info.event.endStr,
+                    allDay: info.event.allDay
+                })
+            })
+            .then(r => { if (!r.ok) { info.revert(); } })
+            .catch(() => info.revert());
+        }
+    });
+
+    calendar.render();
+});
+</script>
+{% endblock %}

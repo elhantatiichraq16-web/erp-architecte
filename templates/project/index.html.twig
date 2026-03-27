@@ -1,0 +1,159 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Projets{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item active">Projets</li>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_project_new') }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Nouveau projet
+    </a>
+{% endblock %}
+
+{% block body %}
+{# ── Status filter bar ── #}
+<div class="mb-3 d-flex flex-wrap align-items-center gap-2">
+    <a href="{{ path('app_project_index', {search: search}) }}"
+       class="btn btn-sm {{ statut == '' ? 'btn-dark' : 'btn-outline-secondary' }}">
+        Tous
+    </a>
+    {% for label, value in statuts %}
+        {% set badgeMap = {
+            'en_attente': 'btn-warning',
+            'en_cours':   'btn-primary',
+            'termine':    'btn-success',
+            'suspendu':   'btn-secondary'
+        } %}
+        {% set badgeMapOutline = {
+            'en_attente': 'btn-outline-warning',
+            'en_cours':   'btn-outline-primary',
+            'termine':    'btn-outline-success',
+            'suspendu':   'btn-outline-secondary'
+        } %}
+        <a href="{{ path('app_project_index', {statut: value, search: search}) }}"
+           class="btn btn-sm {{ statut == value ? badgeMap[value] : badgeMapOutline[value] }}">
+            {{ label }}
+        </a>
+    {% endfor %}
+
+    <form method="GET" action="{{ path('app_project_index') }}" class="ms-auto d-flex gap-2">
+        {% if statut %}
+            <input type="hidden" name="statut" value="{{ statut }}">
+        {% endif %}
+        <div class="input-group" style="max-width:320px;">
+            <span class="input-group-text bg-light border-end-0">
+                <i class="bi bi-search text-muted"></i>
+            </span>
+            <input type="text" name="search" class="form-control border-start-0"
+                   placeholder="Rechercher…" value="{{ search }}">
+        </div>
+        <button type="submit" class="btn btn-outline-secondary">OK</button>
+        {% if search %}
+            <a href="{{ path('app_project_index', {statut: statut}) }}"
+               class="btn btn-outline-danger"><i class="bi bi-x-lg"></i></a>
+        {% endif %}
+    </form>
+</div>
+
+<div class="card rounded-4 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Référence</th>
+                        <th>Nom</th>
+                        <th>Client</th>
+                        <th>Statut</th>
+                        <th style="min-width:140px;">Avancement</th>
+                        <th>Date début</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for project in projects %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-light text-dark font-monospace border">
+                                {{ project.reference }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ path('app_project_show', {id: project.id}) }}"
+                               class="fw-semibold text-decoration-none text-dark">
+                                {{ project.nom }}
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{{ path('app_client_show', {id: project.client.id}) }}"
+                               class="text-decoration-none text-muted">
+                                {{ project.client.displayName }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="badge {{ project.statutBadgeClass }}">
+                                {{ project.statutLabel }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height:8px;">
+                                    <div class="progress-bar bg-primary progress-bar-striped"
+                                         style="width:{{ project.avancementGlobal }}%"
+                                         aria-valuenow="{{ project.avancementGlobal }}"
+                                         aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <small class="text-muted text-nowrap fw-semibold" style="min-width:36px;">
+                                    {{ project.avancementGlobal }}%
+                                </small>
+                            </div>
+                        </td>
+                        <td>
+                            {% if project.dateDebut %}
+                                {{ project.dateDebut|date('d/m/Y') }}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ path('app_project_show', {id: project.id}) }}"
+                               class="btn btn-sm btn-outline-secondary" title="Voir">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{ path('app_project_edit', {id: project.id}) }}"
+                               class="btn btn-sm btn-outline-primary" title="Modifier">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="POST"
+                                  action="{{ path('app_project_delete', {id: project.id}) }}"
+                                  class="d-inline">
+                                <input type="hidden" name="_token"
+                                       value="{{ csrf_token('delete_project_' ~ project.id) }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer"
+                                        onclick="return confirm('Confirmer la suppression ?')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-folder-x fs-2 d-block mb-2"></i>
+                            Aucun projet trouvé.
+                            <a href="{{ path('app_project_new') }}" class="ms-2">Créer le premier projet</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-white text-muted small py-2 px-3">
+        {{ projects|length }} projet{{ projects|length != 1 ? 's' : '' }}
+        {% if statut %} — filtrés par : <strong>{{ statut }}</strong>{% endif %}
+    </div>
+</div>
+{% endblock %}

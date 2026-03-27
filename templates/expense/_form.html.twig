@@ -1,0 +1,53 @@
+{{ form_start(form, {attr: {novalidate: 'novalidate', class: 'needs-validation'}}) }}
+
+<div class="row g-3">
+    <div class="col-md-6">
+        {{ form_label(form.project, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.project, {attr: {class: 'form-select'}}) }}
+        {{ form_errors(form.project) }}
+    </div>
+
+    <div class="col-md-6">
+        {{ form_label(form.categorie, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.categorie, {attr: {class: 'form-select'}}) }}
+        {{ form_errors(form.categorie) }}
+    </div>
+
+    <div class="col-md-4">
+        {{ form_label(form.date, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.date, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.date) }}
+    </div>
+
+    <div class="col-md-4">
+        {{ form_label(form.montant, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        <div class="input-group">
+            {{ form_widget(form.montant, {attr: {class: 'form-control', step: '0.01', min: '0'}}) }}
+            <span class="input-group-text">€</span>
+        </div>
+        {{ form_errors(form.montant) }}
+    </div>
+
+    <div class="col-md-4">
+        {{ form_label(form.fournisseur, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.fournisseur, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.fournisseur) }}
+    </div>
+
+    <div class="col-12">
+        {{ form_label(form.description, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.description, {attr: {class: 'form-control', rows: 3}}) }}
+        {{ form_errors(form.description) }}
+    </div>
+
+    {% if form.justificatif is defined %}
+    <div class="col-12">
+        {{ form_label(form.justificatif, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.justificatif, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.justificatif) }}
+        <div class="form-text">Chemin ou nom du fichier justificatif (optionnel).</div>
+    </div>
+    {% endif %}
+</div>
+
+{{ form_end(form) }}

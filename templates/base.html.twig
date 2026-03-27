@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1E3A5F">
+    <title>{% block title %}ERP Archi{% endblock %} — Cabinet Architecture</title>
+
+    {# Bootstrap Icons CDN #}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    {# Webpack Encore compiled CSS #}
+    {% block stylesheets %}
+            {{ encore_entry_link_tags('app') }}
+        {{ encore_entry_link_tags('app') }}
+    {% endblock %}
+
+    <style>
+        /* ============================================================
+           CSS CUSTOM PROPERTIES
+        ============================================================ */
+        :root {
+            --sidebar-width: 260px;
+            --sidebar-bg:    #1E3A5F;
+            --sidebar-hover: rgba(255, 255, 255, 0.08);
+            --active-bg:     #3B82F6;
+            --content-bg:    #F8F9FA;
+            --header-height: 72px;
+            --shadow-sm:     0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+            --shadow-md:     0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+            --shadow-lg:     0 10px 15px rgba(0,0,0,.07), 0 4px 6px rgba(0,0,0,.05);
+            --radius-sm:     6px;
+            --radius-md:     10px;
+            --radius-lg:     14px;
+            --transition:    0.2s ease;
+            --font-sans:     'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        /* ============================================================
+           RESET / BASE
+        ============================================================ */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            height: 100%;
+            font-family: var(--font-sans);
+            background: var(--content-bg);
+            color: #1a2332;
+            font-size: 14px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a { text-decoration: none; color: inherit; }
+
+        /* ============================================================
+           SIDEBAR
+        ============================================================ */
+        .erp-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--sidebar-bg);
+            display: flex;
+            flex-direction: column;
+            z-index: 1040;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,.15) transparent;
+        }
+
+        .erp-sidebar::-webkit-scrollbar { width: 4px; }
+        .erp-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 2px; }
+
+        /* Logo / Brand */
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 22px 20px 20px;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+            flex-shrink: 0;
+        }
+
+        .sidebar-brand-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--active-bg);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: #fff;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(59,130,246,.4);
+        }
+
+        .sidebar-brand-text {
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: -.2px;
+            line-height: 1.2;
+        }
+
+        .sidebar-brand-sub {
+            color: rgba(255,255,255,.45);
+            font-size: .7rem;
+            font-weight: 400;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+        }
+
+        /* Navigation */
+        .sidebar-nav {
+            flex: 1;
+            padding: 14px 12px;
+            list-style: none;
+        }
+
+        .sidebar-section-label {
+            color: rgba(255,255,255,.3);
+            font-size: .65rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 14px 10px 6px;
+        }
+
+        .sidebar-nav-item { margin-bottom: 2px; }
+
+        .sidebar-nav-link {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            color: rgba(255,255,255,.72);
+            font-size: .875rem;
+            font-weight: 500;
+            transition: background var(--transition), color var(--transition), transform var(--transition);
+            white-space: nowrap;
+        }
+
+        .sidebar-nav-link i {
+            font-size: 1.05rem;
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+            transition: transform var(--transition);
+        }
+
+        .sidebar-nav-link:hover {
+            background: var(--sidebar-hover);
+            color: #fff;
+            transform: translateX(2px);
+        }
+
+        .sidebar-nav-link:hover i { transform: scale(1.1); }
+
+        .sidebar-nav-link.active {
+            background: var(--active-bg);
+            color: #fff;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(59,130,246,.35);
+        }
+
+        .sidebar-nav-link.active i { transform: none; }
+
+        .nav-badge {
+            margin-left: auto;
+            background: rgba(255,255,255,.18);
+            color: #fff;
+            font-size: .65rem;
+            font-weight: 700;
+            padding: 1px 7px;
+            border-radius: 20px;
+            line-height: 1.6;
+        }
+
+        .sidebar-nav-link.active .nav-badge { background: rgba(255,255,255,.25); }
+
+        /* Sidebar footer */
+        .sidebar-footer {
+            padding: 14px 12px 16px;
+            border-top: 1px solid rgba(255,255,255,.08);
+            flex-shrink: 0;
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: var(--radius-sm);
+            transition: background var(--transition);
+            cursor: pointer;
+        }
+
+        .sidebar-user:hover { background: var(--sidebar-hover); }
+
+        .sidebar-user-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: var(--active-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: .875rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .sidebar-user-name {
+            color: rgba(255,255,255,.85);
+            font-size: .8rem;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .sidebar-user-role {
+            color: rgba(255,255,255,.4);
+            font-size: .68rem;
+        }
+
+        /* ============================================================
+           MAIN LAYOUT
+        ============================================================ */
+        .erp-main {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: var(--content-bg);
+            transition: margin-left var(--transition);
+        }
+
+        /* ============================================================
+           TOP HEADER
+        ============================================================ */
+        .erp-header {
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+            background: #fff;
+            box-shadow: var(--shadow-sm);
+            min-height: var(--header-height);
+            display: flex;
+            align-items: center;
+            padding: 0 28px;
+            gap: 16px;
+            border-bottom: 1px solid #eef1f5;
+        }
+
+        .header-hamburger {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.3rem;
+            color: #64748b;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: var(--radius-sm);
+            transition: background var(--transition), color var(--transition);
+            flex-shrink: 0;
+        }
+
+        .header-hamburger:hover { background: #f1f5f9; color: #1e293b; }
+
+        .header-titles { flex: 1; min-width: 0; }
+
+        .header-page-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -.3px;
+            line-height: 1.2;
+        }
+
+        .header-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 2px;
+            flex-wrap: wrap;
+        }
+
+        .header-breadcrumb a,
+        .header-breadcrumb span {
+            font-size: .75rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .header-breadcrumb a { transition: color var(--transition); }
+        .header-breadcrumb a:hover { color: var(--active-bg); }
+        .header-breadcrumb .separator { color: #cbd5e1; font-size: .65rem; }
+        .header-breadcrumb .current { color: #475569; }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        /* Header icon buttons */
+        .header-icon-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: var(--radius-sm);
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all var(--transition);
+            position: relative;
+        }
+
+        .header-icon-btn:hover {
+            background: #f1f5f9;
+            color: #334155;
+            border-color: #cbd5e1;
+        }
+
+        .header-icon-btn .badge-dot {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 7px;
+            height: 7px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 1.5px solid #fff;
+        }
+
+        /* ============================================================
+           PAGE CONTENT AREA
+        ============================================================ */
+        .erp-content {
+            flex: 1;
+            padding: 28px;
+        }
+
+        /* ============================================================
+           FLASH TOAST NOTIFICATIONS
+        ============================================================ */
+        .toast-container {
+            position: fixed;
+            top: 88px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 360px;
+            width: 100%;
+        }
+
+        .erp-toast {
+            background: #fff;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-lg);
+            padding: 14px 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            border-left: 4px solid transparent;
+            animation: toastSlideIn .3s cubic-bezier(.16,1,.3,1) forwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .erp-toast.toast-success { border-left-color: #22c55e; }
+        .erp-toast.toast-error   { border-left-color: #ef4444; }
+        .erp-toast.toast-warning { border-left-color: #f59e0b; }
+        .erp-toast.toast-info    { border-left-color: #3b82f6; }
+
+        .toast-icon {
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .toast-success .toast-icon { color: #22c55e; }
+        .toast-error   .toast-icon { color: #ef4444; }
+        .toast-warning .toast-icon { color: #f59e0b; }
+        .toast-info    .toast-icon { color: #3b82f6; }
+
+        .toast-body { flex: 1; }
+        .toast-title { font-weight: 700; font-size: .8rem; color: #0f172a; margin-bottom: 2px; }
+        .toast-message { font-size: .8rem; color: #475569; line-height: 1.4; }
+
+        .toast-close {
+            background: none;
+            border: none;
+            font-size: .9rem;
+            color: #94a3b8;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            transition: color var(--transition);
+            flex-shrink: 0;
+        }
+
+        .toast-close:hover { color: #475569; }
+
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            border-radius: 0 0 0 4px;
+            animation: toastProgress 3s linear forwards;
+        }
+
+        .toast-success .toast-progress { background: #22c55e; }
+        .toast-error   .toast-progress { background: #ef4444; }
+        .toast-warning .toast-progress { background: #f59e0b; }
+        .toast-info    .toast-progress { background: #3b82f6; }
+
+        @keyframes toastSlideIn {
+            from { opacity: 0; transform: translateX(24px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes toastSlideOut {
+            from { opacity: 1; transform: translateX(0); max-height: 120px; margin-bottom: 0; }
+            to   { opacity: 0; transform: translateX(24px); max-height: 0; margin-bottom: -10px; }
+        }
+
+        @keyframes toastProgress {
+            from { width: 100%; }
+            to   { width: 0%; }
+        }
+
+        /* ============================================================
+           FOOTER
+        ============================================================ */
+        .erp-footer {
+            padding: 16px 28px;
+            border-top: 1px solid #e9ecef;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .erp-footer-copy {
+            font-size: .75rem;
+            color: #94a3b8;
+        }
+
+        .erp-footer-version {
+            font-size: .7rem;
+            color: #cbd5e1;
+            font-weight: 500;
+        }
+
+        /* ============================================================
+           MOBILE OVERLAY
+        ============================================================ */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.45);
+            z-index: 1039;
+            backdrop-filter: blur(2px);
+            opacity: 0;
+            transition: opacity var(--transition);
+        }
+
+        .sidebar-overlay.visible {
+            display: block;
+            opacity: 1;
+        }
+
+        /* ============================================================
+           RESPONSIVE — MOBILE < 992px
+        ============================================================ */
+        @media (max-width: 991.98px) {
+            .erp-sidebar {
+                transform: translateX(-100%);
+                transition: transform .28s cubic-bezier(.4,0,.2,1);
+                box-shadow: none;
+            }
+
+            .erp-sidebar.sidebar-open {
+                transform: translateX(0);
+                box-shadow: 8px 0 32px rgba(0,0,0,.18);
+            }
+
+            .erp-main {
+                margin-left: 0 !important;
+            }
+
+            .header-hamburger { display: flex; align-items: center; justify-content: center; }
+
+            .erp-content { padding: 20px 16px; }
+
+            .erp-header { padding: 0 16px; }
+        }
+
+        @media (max-width: 575.98px) {
+            .erp-content { padding: 16px 12px; }
+            .toast-container { right: 12px; left: 12px; max-width: none; }
+            .header-page-title { font-size: 1.05rem; }
+        }
+
+        /* ============================================================
+           UTILITY HELPERS
+        ============================================================ */
+        .card-erp {
+            background: #fff;
+            border: 1px solid #eef1f5;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow var(--transition), transform var(--transition);
+        }
+
+        .card-erp:hover { box-shadow: var(--shadow-md); }
+
+        .btn-primary-erp {
+            background: var(--active-bg);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 9px 18px;
+            font-size: .875rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+            transition: all var(--transition);
+            box-shadow: 0 1px 3px rgba(59,130,246,.3);
+        }
+
+        .btn-primary-erp:hover {
+            background: #2563eb;
+            box-shadow: 0 4px 12px rgba(59,130,246,.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary-erp:active { transform: translateY(0); }
+
+        .btn-outline-erp {
+            background: transparent;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-sm);
+            padding: 8px 16px;
+            font-size: .875rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+        .btn-outline-erp:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: #1e293b;
+        }
+    </style>
+</head>
+<body>
+
+{# ================================================================
+   MOBILE SIDEBAR OVERLAY
+================================================================ #}
+<div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+
+{# ================================================================
+   SIDEBAR
+================================================================ #}
+{% set currentRoute = app.request.attributes.get('_route') %}
+<aside class="erp-sidebar" id="erpSidebar" role="navigation" aria-label="Navigation principale">
+
+    {# Brand / Logo #}
+    <div class="sidebar-brand">
+        <div class="sidebar-brand-icon">
+            <i class="bi bi-building"></i>
+        </div>
+        <div>
+            <div class="sidebar-brand-text">ERP Archi</div>
+            <div class="sidebar-brand-sub">Cabinet Architecture</div>
+        </div>
+    </div>
+
+    {# Navigation #}
+    <ul class="sidebar-nav" role="menubar">
+
+        <li class="sidebar-section-label">Principal</li>
+
+        <li class="sidebar-nav-item" role="none">
+            <a href="{{ path('app_dashboard') }}"
+               class="sidebar-nav-link {{ currentRoute == 'app_dashboard' ? 'active' : '' }}"
+               role="menuitem"
+               {% if currentRoute == 'app_dashboard' %}aria-current="page"{% endif %}>
+                <i class="bi bi-speedometer2"></i>
+                <span>Dashboard</span>
+            </a>
+        </li>
+
+        <li class="sidebar-section-label">Gestion</li>
+
+        <li class="sidebar-nav-item" role="none">
+            <a href="{{ path('app_client_index') }}"
+               class="sidebar-nav-link {{ currentRoute starts with 'app_client' ? 'active' : '' }}"
+               role="menuitem"
+               {% if currentRoute starts with 'app_client' %}aria-current="page"{% endif %}>
+                <i class="bi bi-people"></i>
+                <span>Clients</span>
+            </a>
+        </li>
+
+        <li class="sidebar-nav-item" role="none">
+            <a href="{{ path('app_project_index') }}"
+               class="sidebar-nav-link {{ currentRoute starts with 'app_project' ? 'active' : '' }}"
+               role="menuitem"
+               {% if currentRoute starts with 'app_project' %}aria-current="page"{% endif %}>
+                <i class="bi bi-kanban"></i>
+                <span>Projets</span>
+            </a>
+        </li>
+
+        <li class="sidebar-section-label">Finance</li>
+
+        <li class="sidebar-nav-item" role="none">
+            <a href="{{ path('app_quote_index') }}"
+               class="sidebar-nav-link {{ currentRoute starts with 'app_quote' ? 'active' : '' }}"
+               role="menuitem"
+               {% if currentRoute starts with 'app_quote' %}aria-current="page"{% endif %}>
+                <i class="bi bi-file-earmark-text"></i>
+                <span>Devis</span>
+            </a>
+        </li>
+
+        <li class="sidebar-nav-item" role="none">
+            <a href="{{ path('app_invoice_index') }}"
+               class="sidebar-nav-link {{ currentRoute starts with 'app_invoice' ? 'active' : '' }}"
+               role="menuitem"
+               {% if currentRoute starts with 'app_invoice' %}aria-current="page"{% endif %}>
+                <i class="bi bi-receipt"></i>
+                <span>Factures</span>
+            </a>
+        </li>
+
+        <li class="sidebar-nav-item" role="none">
+            <a href="{{ path('app_expense_index') }}"
+               class="sidebar-nav-link {{ currentRoute starts with 'app_expense' ? 'active' : '' }}"
+               role="menuitem"
+               {% if currentRoute starts with 'app_expense' %}aria-current="page"{% endif %}>
+                <i class="bi bi-wallet2"></i>
+                <span>Dépenses</span>
+            </a>
+        </li>
+
+        <li class="sidebar-section-label">Suivi</li>
+
+        <li class="sidebar-nav-item" role="none">
+            <a href="{{ path('app_time_index') }}"
+               class="sidebar-nav-link {{ currentRoute starts with 'app_time' ? 'active' : '' }}"
+               role="menuitem"
+               {% if currentRoute starts with 'app_time' %}aria-current="page"{% endif %}>
+                <i class="bi bi-clock-history"></i>
+                <span>Heures</span>
+            </a>
+        </li>
+
+        <li class="sidebar-nav-item" role="none">
+            <a href="{{ path('app_event_index') }}"
+               class="sidebar-nav-link {{ currentRoute starts with 'app_event' ? 'active' : '' }}"
+               role="menuitem"
+               {% if currentRoute starts with 'app_event' %}aria-current="page"{% endif %}>
+                <i class="bi bi-calendar3"></i>
+                <span>Calendrier</span>
+            </a>
+        </li>
+
+        <li class="sidebar-nav-item" role="none">
+            <a href="{{ path('app_document_index') }}"
+               class="sidebar-nav-link {{ currentRoute starts with 'app_document' ? 'active' : '' }}"
+               role="menuitem"
+               {% if currentRoute starts with 'app_document' %}aria-current="page"{% endif %}>
+                <i class="bi bi-folder2-open"></i>
+                <span>Documents</span>
+            </a>
+        </li>
+
+        <li class="sidebar-section-label">Système</li>
+
+        <li class="sidebar-nav-item" role="none">
+            <a href="{{ path('app_setting_index') }}"
+               class="sidebar-nav-link {{ currentRoute starts with 'app_setting' ? 'active' : '' }}"
+               role="menuitem"
+               {% if currentRoute starts with 'app_setting' %}aria-current="page"{% endif %}>
+                <i class="bi bi-gear"></i>
+                <span>Paramètres</span>
+            </a>
+        </li>
+
+    </ul>
+
+    {# Sidebar Footer / User #}
+    <div class="sidebar-footer">
+        {% if app.user %}
+        <div class="sidebar-user" title="{{ app.user.userIdentifier }}">
+            <div class="sidebar-user-avatar">
+                {{ app.user.userIdentifier|first|upper }}
+            </div>
+            <div>
+                <div class="sidebar-user-name">{{ app.user.userIdentifier }}</div>
+                <div class="sidebar-user-role">Architecte</div>
+            </div>
+        </div>
+        {% else %}
+        <div class="sidebar-user">
+            <div class="sidebar-user-avatar"><i class="bi bi-person"></i></div>
+            <div>
+                <div class="sidebar-user-name">Invité</div>
+                <div class="sidebar-user-role">Non connecté</div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+</aside>
+
+{# ================================================================
+   MAIN CONTENT
+================================================================ #}
+<div class="erp-main" id="erpMain">
+
+    {# ── TOP HEADER ── #}
+    <header class="erp-header">
+
+        {# Hamburger (mobile) #}
+        <button class="header-hamburger"
+                id="sidebarToggle"
+                type="button"
+                aria-label="Ouvrir le menu"
+                aria-controls="erpSidebar"
+                aria-expanded="false">
+            <i class="bi bi-list"></i>
+        </button>
+
+        {# Page title + breadcrumb #}
+        <div class="header-titles">
+            <h1 class="header-page-title">{% block page_title %}{% endblock %}</h1>
+            <nav class="header-breadcrumb" aria-label="Fil d'Ariane">
+                <a href="{{ path('app_dashboard') }}">
+                    <i class="bi bi-house-door" style="font-size:.7rem;"></i>
+                    Accueil
+                </a>
+                {% block breadcrumb %}{% endblock %}
+            </nav>
+        </div>
+
+        {# Action buttons slot #}
+        <div class="header-actions">
+            {% block page_actions %}{% endblock %}
+
+            {# Notification bell #}
+            <div class="header-icon-btn" title="Notifications" role="button" tabindex="0" aria-label="Notifications">
+                <i class="bi bi-bell"></i>
+                <span class="badge-dot" aria-hidden="true"></span>
+            </div>
+
+            {# Full-screen toggle #}
+            <div class="header-icon-btn" id="fullscreenBtn" title="Plein écran" role="button" tabindex="0" aria-label="Plein écran">
+                <i class="bi bi-fullscreen"></i>
+            </div>
+        </div>
+
+    </header>
+
+    {# ── FLASH MESSAGES (Toasts) ── #}
+    {% set flashMap = {
+        'success': { icon: 'bi-check-circle-fill', label: 'Succès',      cls: 'toast-success' },
+        'error':   { icon: 'bi-x-circle-fill',     label: 'Erreur',      cls: 'toast-error'   },
+        'danger':  { icon: 'bi-x-circle-fill',     label: 'Erreur',      cls: 'toast-error'   },
+        'warning': { icon: 'bi-exclamation-triangle-fill', label: 'Attention', cls: 'toast-warning' },
+        'info':    { icon: 'bi-info-circle-fill',   label: 'Info',        cls: 'toast-info'    }
+    } %}
+
+    {% set hasFlash = false %}
+    {% for type, messages in app.flashes %}
+        {% if messages|length > 0 %}{% set hasFlash = true %}{% endif %}
+    {% endfor %}
+
+    {% if hasFlash %}
+    <div class="toast-container" id="toastContainer" role="status" aria-live="polite">
+        {% for type, messages in app.flashes %}
+            {% set config = flashMap[type] ?? flashMap['info'] %}
+            {% for message in messages %}
+            <div class="erp-toast {{ config.cls }}" role="alert" aria-atomic="true">
+                <i class="bi {{ config.icon }} toast-icon" aria-hidden="true"></i>
+                <div class="toast-body">
+                    <div class="toast-title">{{ config.label }}</div>
+                    <div class="toast-message">{{ message }}</div>
+                </div>
+                <button class="toast-close" type="button" aria-label="Fermer">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+                <div class="toast-progress" aria-hidden="true"></div>
+            </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {# ── PAGE BODY ── #}
+    <main class="erp-content" id="mainContent">
+        {% block body %}{% endblock %}
+    </main>
+
+    {# ── FOOTER ── #}
+    <footer class="erp-footer">
+        <span class="erp-footer-copy">
+            &copy; 2026 Cabinet Architecture — <strong>ERP Archi</strong>
+        </span>
+        <span class="erp-footer-version">v1.0.0</span>
+    </footer>
+
+</div>{# /erp-main #}
+
+{# ================================================================
+   SCRIPTS
+================================================================ #}
+{% block javascripts %}
+            {{ encore_entry_script_tags('app') }}
+    {{ encore_entry_script_tags('app') }}
+{% endblock %}
+
+<script>
+(function () {
+    'use strict';
+
+    /* ── Sidebar hamburger (mobile) ── */
+    const sidebar  = document.getElementById('erpSidebar');
+    const overlay  = document.getElementById('sidebarOverlay');
+    const toggle   = document.getElementById('sidebarToggle');
+
+    function openSidebar() {
+        sidebar.classList.add('sidebar-open');
+        overlay.classList.add('visible');
+        toggle.setAttribute('aria-expanded', 'true');
+        toggle.querySelector('i').className = 'bi bi-x-lg';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('sidebar-open');
+        overlay.classList.remove('visible');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.querySelector('i').className = 'bi bi-list';
+        document.body.style.overflow = '';
+    }
+
+    if (toggle) {
+        toggle.addEventListener('click', function () {
+            sidebar.classList.contains('sidebar-open') ? closeSidebar() : openSidebar();
+        });
+    }
+
+    if (overlay) {
+        overlay.addEventListener('click', closeSidebar);
+    }
+
+    /* Close sidebar on resize to desktop */
+    window.addEventListener('resize', function () {
+        if (window.innerWidth >= 992) { closeSidebar(); }
+    });
+
+    /* ── Flash Toast auto-dismiss ── */
+    function dismissToast(toast) {
+        toast.style.animation = 'toastSlideOut .28s ease forwards';
+        toast.addEventListener('animationend', function () {
+            toast.remove();
+            /* Remove container if empty */
+            const container = document.getElementById('toastContainer');
+            if (container && container.children.length === 0) container.remove();
+        }, { once: true });
+    }
+
+    document.querySelectorAll('.erp-toast').forEach(function (toast) {
+        /* Auto-dismiss after 3 s */
+        const timer = setTimeout(function () { dismissToast(toast); }, 3000);
+
+        /* Manual close */
+        const closeBtn = toast.querySelector('.toast-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function () {
+                clearTimeout(timer);
+                dismissToast(toast);
+            });
+        }
+    });
+
+    /* ── Fullscreen toggle ── */
+    const fsBtn = document.getElementById('fullscreenBtn');
+    if (fsBtn) {
+        fsBtn.addEventListener('click', function () {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(function () {});
+                fsBtn.querySelector('i').className = 'bi bi-fullscreen-exit';
+            } else {
+                document.exitFullscreen();
+                fsBtn.querySelector('i').className = 'bi bi-fullscreen';
+            }
+        });
+    }
+
+})();
+</script>
+
+{% block page_scripts %}{% endblock %}
+
+</body>
+</html>

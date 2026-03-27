@@ -1,0 +1,41 @@
+###> symfony/framework-bundle ###
+/.env.local
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/var/
+/vendor/
+###< symfony/framework-bundle ###
+
+###> symfony/webpack-encore-bundle ###
+/node_modules/
+/public/build/
+###< symfony/webpack-encore-bundle ###
+
+###> docker ###
+docker-compose.override.yml
+###< docker ###
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Composer override
+compose.override.yaml
+
+# E2E
+e2e/node_modules/
+e2e/test-results/
+e2e/playwright-report/
+
+# Docs
+docs/node_modules/
+docs/.docusaurus/
+docs/build/

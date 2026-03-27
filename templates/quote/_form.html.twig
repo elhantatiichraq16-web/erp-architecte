@@ -1,0 +1,206 @@
+{{ form_start(form, {attr: {novalidate: 'novalidate', id: 'quote-form'}}) }}
+
+<div class="row g-3">
+    {# Header #}
+    <div class="col-md-6">
+        {{ form_label(form.client, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.client, {attr: {class: 'form-select'}}) }}
+        {{ form_errors(form.client) }}
+    </div>
+
+    <div class="col-md-6">
+        {{ form_label(form.project, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.project, {attr: {class: 'form-select'}}) }}
+        {{ form_errors(form.project) }}
+    </div>
+
+    <div class="col-12">
+        {{ form_label(form.objet, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.objet, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.objet) }}
+    </div>
+
+    <div class="col-md-4">
+        {{ form_label(form.dateCreation, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.dateCreation, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.dateCreation) }}
+    </div>
+
+    <div class="col-md-4">
+        {{ form_label(form.dateValidite, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.dateValidite, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.dateValidite) }}
+    </div>
+
+    <div class="col-md-2">
+        {{ form_label(form.tauxTVA, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        <div class="input-group">
+            {{ form_widget(form.tauxTVA, {attr: {class: 'form-control', id: 'tauxTVA'}}) }}
+            <span class="input-group-text">%</span>
+        </div>
+        {{ form_errors(form.tauxTVA) }}
+    </div>
+
+    <div class="col-md-2">
+        {{ form_label(form.statut, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.statut, {attr: {class: 'form-select'}}) }}
+        {{ form_errors(form.statut) }}
+    </div>
+</div>
+
+{# Lines collection #}
+<div class="mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h6 class="text-uppercase text-muted fw-semibold small mb-0">
+            <i class="bi bi-list-ul me-1"></i> Lignes du devis
+        </h6>
+        <button type="button" id="add-line" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-plus-lg me-1"></i> Ajouter une ligne
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle" id="lines-table">
+            <thead class="table-light">
+                <tr>
+                    <th style="min-width:220px;">Désignation</th>
+                    <th style="min-width:200px;">Description</th>
+                    <th style="width:80px;">Qté</th>
+                    <th style="width:90px;">Unité</th>
+                    <th style="width:130px;">Prix HT</th>
+                    <th style="width:130px;">Montant HT</th>
+                    <th style="width:50px;"></th>
+                </tr>
+            </thead>
+            <tbody id="lines-collection"
+                   data-prototype="{{ form_widget(form.lines.vars.prototype)|e('html_attr') }}">
+            {% for line in form.lines %}
+                <tr class="line-row">
+                    <td>{{ form_widget(line.designation, {attr: {class: 'form-control form-control-sm line-designation'}}) }}</td>
+                    <td>{{ form_widget(line.quantite, {attr: {class: 'form-control form-control-sm line-qty', step: '0.01'}}) }}</td>
+                    <td>{{ form_widget(line.unite, {attr: {class: 'form-control form-control-sm'}}) }}</td>
+                    <td>{{ form_widget(line.prixUnitaireHT, {attr: {class: 'form-control form-control-sm line-price', step: '0.01'}}) }}</td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm line-total bg-light"
+                               readonly value="{{ line.vars.data.montantHT ?? '' }}">
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-danger remove-line">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot class="table-light">
+                <tr>
+                    <td colspan="5" class="text-end fw-semibold">Total HT</td>
+                    <td id="footer-ht" class="fw-semibold text-end">— €</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="5" class="text-end fw-semibold">TVA</td>
+                    <td id="footer-tva" class="fw-semibold text-end">— €</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="5" class="text-end fw-bold fs-6">Total TTC</td>
+                    <td id="footer-ttc" class="fw-bold text-primary fs-6 text-end">— €</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+{{ form_end(form) }}
+
+<script>
+(function () {
+    const tbody   = document.getElementById('lines-collection');
+    const proto   = tbody.dataset.prototype;
+    let   idx     = tbody.querySelectorAll('.line-row').length;
+    const tauxEl  = document.getElementById('tauxTVA');
+
+    function fmt(n) {
+        return n.toFixed(2).replace('.', ',') + ' €';
+    }
+
+    function recalc() {
+        let ht = 0;
+        tbody.querySelectorAll('.line-row').forEach(function (row) {
+            const qty   = parseFloat(row.querySelector('.line-qty')?.value)   || 0;
+            const price = parseFloat(row.querySelector('.line-price')?.value) || 0;
+            const sub   = qty * price;
+            const totalEl = row.querySelector('.line-total');
+            if (totalEl) totalEl.value = sub.toFixed(2);
+            ht += sub;
+        });
+        const taux = parseFloat(tauxEl?.value) || 0;
+        const tva  = ht * taux / 100;
+        document.getElementById('footer-ht').textContent  = fmt(ht);
+        document.getElementById('footer-tva').textContent = fmt(tva);
+        document.getElementById('footer-ttc').textContent = fmt(ht + tva);
+    }
+
+    function buildRow(html) {
+        const tr = document.createElement('tr');
+        tr.className = 'line-row';
+        // Wrap form fields in cells
+        const tmp = document.createElement('tbody');
+        tmp.innerHTML = `<tr>${html}</tr>`;
+        // Simpler: just inject as a full row
+        tr.innerHTML = `
+            <td></td><td></td><td></td><td></td><td></td>
+            <td><input type="text" class="form-control form-control-sm line-total bg-light" readonly></td>
+            <td><button type="button" class="btn btn-sm btn-outline-danger remove-line"><i class="bi bi-trash"></i></button></td>`;
+        // Actually rebuild properly
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        const fields = div.querySelectorAll('input, select, textarea');
+        // Map fields by name pattern to columns
+        tr.innerHTML = '';
+        const colClasses = ['line-designation', '', 'line-qty', '', 'line-price'];
+        ['designation','quantite','unite','prixUnitaireHT'].forEach(function (fname, i) {
+            const td = document.createElement('td');
+            const field = div.querySelector(`[name*="[${fname}]"]`);
+            if (field) {
+                field.className = `form-control form-control-sm${colClasses[i] ? ' '+colClasses[i] : ''}`;
+                field.setAttribute('step', '0.01');
+                td.appendChild(field);
+            }
+            tr.appendChild(td);
+        });
+        const tdTotal = document.createElement('td');
+        tdTotal.innerHTML = '<input type="text" class="form-control form-control-sm line-total bg-light" readonly>';
+        tr.appendChild(tdTotal);
+        const tdDel = document.createElement('td');
+        tdDel.innerHTML = '<button type="button" class="btn btn-sm btn-outline-danger remove-line"><i class="bi bi-trash"></i></button>';
+        tr.appendChild(tdDel);
+        return tr;
+    }
+
+    document.getElementById('add-line').addEventListener('click', function () {
+        const html = proto.replace(/__name__/g, idx++);
+        tbody.appendChild(buildRow(html));
+        recalc();
+    });
+
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('.remove-line')) {
+            e.target.closest('.line-row').remove();
+            recalc();
+        }
+    });
+
+    document.addEventListener('input', function (e) {
+        if (e.target.classList.contains('line-qty') ||
+            e.target.classList.contains('line-price') ||
+            e.target === tauxEl) {
+            recalc();
+        }
+    });
+
+    recalc();
+}());
+</script>

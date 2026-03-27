@@ -1,0 +1,149 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Devis {{ quote.numero }}{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{{ path('app_quote_index') }}">Devis</a></li>
+    <li class="breadcrumb-item active">{{ quote.numero }}</li>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_quote_edit', {id: quote.id}) }}" class="btn btn-outline-primary">
+        <i class="bi bi-pencil me-1"></i> Modifier
+    </a>
+    {% if quote.statut == 'accepte' %}
+        <a href="{{ path('app_quote_convert', {id: quote.id}) }}" class="btn btn-success">
+            <i class="bi bi-arrow-right-circle me-1"></i> Convertir en facture
+        </a>
+    {% endif %}
+    <form method="POST" action="{{ path('app_quote_delete', {id: quote.id}) }}" class="d-inline">
+        <input type="hidden" name="_token" value="{{ csrf_token('delete_quote_' ~ quote.id) }}">
+        <button type="submit" class="btn btn-outline-danger"
+                onclick="return confirm('Confirmer la suppression ?')">
+            <i class="bi bi-trash me-1"></i> Supprimer
+        </button>
+    </form>
+{% endblock %}
+
+{% block body %}
+<div class="row g-4">
+    {# Left: meta #}
+    <div class="col-lg-4">
+        <div class="card rounded-4 shadow-sm">
+            <div class="card-header bg-white fw-semibold">
+                <i class="bi bi-info-circle me-2 text-primary"></i> Informations
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Numéro</span>
+                    <span class="font-monospace fw-bold">{{ quote.numero }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Statut</span>
+                    <span class="badge {{ quote.statutBadgeClass }}">{{ quote.statutLabel }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Client</span>
+                    <a href="{{ path('app_client_show', {id: quote.client.id}) }}"
+                       class="text-decoration-none">{{ quote.client.displayName }}</a>
+                </li>
+                {% if quote.project %}
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Projet</span>
+                    <a href="{{ path('app_project_show', {id: quote.project.id}) }}"
+                       class="text-decoration-none">{{ quote.project.reference }}</a>
+                </li>
+                {% endif %}
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Date de création</span>
+                    <span>{{ quote.dateCreation|date('d/m/Y') }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Validité</span>
+                    <span>{{ quote.dateValidite ? quote.dateValidite|date('d/m/Y') : '—' }}</span>
+                </li>
+            </ul>
+        </div>
+
+        {# Totals card #}
+        <div class="card rounded-4 shadow-sm mt-3">
+            <div class="card-header bg-white fw-semibold">
+                <i class="bi bi-calculator me-2 text-success"></i> Totaux
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Taux TVA</span>
+                    <span>{{ quote.tauxTVA }}%</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Total HT</span>
+                    <span>{{ quote.totalHT|number_format(2, ',', '.') }} €</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">TVA ({{ quote.tauxTVA }}%)</span>
+                    <span>{{ quote.totalTVA|number_format(2, ',', '.') }} €</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between fw-bold fs-5">
+                    <span>Total TTC</span>
+                    <span class="text-primary">{{ quote.totalTTC|number_format(2, ',', '.') }} €</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    {# Right: lines #}
+    <div class="col-lg-8">
+        <div class="card rounded-4 shadow-sm">
+            <div class="card-header bg-white fw-semibold">
+                <i class="bi bi-list-ul me-2"></i> {{ quote.objet }}
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="min-width:220px;">Désignation</th>
+                                <th class="text-center">Qté</th>
+                                <th>Unité</th>
+                                <th class="text-end">Prix unitaire HT</th>
+                                <th class="text-end">Montant HT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for line in quote.lines %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ line.designation }}</div>
+                                </td>
+                                <td class="text-center">{{ line.quantite|number_format(2, ',', '.') }}</td>
+                                <td>{{ line.unite ?? '—' }}</td>
+                                <td class="text-end">{{ line.prixUnitaireHT|number_format(2, ',', '.') }} €</td>
+                                <td class="text-end fw-semibold">{{ line.montantHT|number_format(2, ',', '.') }} €</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">Aucune ligne.</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="4" class="text-end text-muted">Total HT</td>
+                                <td class="text-end fw-semibold">{{ quote.totalHT|number_format(2, ',', '.') }} €</td>
+                            </tr>
+                            <tr>
+                                <td colspan="4" class="text-end text-muted">TVA {{ quote.tauxTVA }}%</td>
+                                <td class="text-end fw-semibold">{{ quote.totalTVA|number_format(2, ',', '.') }} €</td>
+                            </tr>
+                            <tr class="fs-5">
+                                <td colspan="4" class="text-end fw-bold">Total TTC</td>
+                                <td class="text-end fw-bold text-primary">{{ quote.totalTTC|number_format(2, ',', '.') }} €</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

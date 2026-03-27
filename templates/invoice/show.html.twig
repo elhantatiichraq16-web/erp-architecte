@@ -1,0 +1,168 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Facture {{ invoice.numero }}{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{{ path('app_invoice_index') }}">Factures</a></li>
+    <li class="breadcrumb-item active">{{ invoice.numero }}</li>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_invoice_print', {id: invoice.id}) }}"
+       class="btn btn-outline-dark" target="_blank">
+        <i class="bi bi-printer me-1"></i> Imprimer
+    </a>
+    <a href="{{ path('app_invoice_edit', {id: invoice.id}) }}" class="btn btn-outline-primary">
+        <i class="bi bi-pencil me-1"></i> Modifier
+    </a>
+    {% if invoice.statut != 'payee' %}
+        <a href="{{ path('app_invoice_pay', {id: invoice.id}) }}" class="btn btn-success">
+            <i class="bi bi-check-circle me-1"></i> Marquer payée
+        </a>
+    {% endif %}
+    <form method="POST" action="{{ path('app_invoice_delete', {id: invoice.id}) }}" class="d-inline">
+        <input type="hidden" name="_token" value="{{ csrf_token('delete_invoice_' ~ invoice.id) }}">
+        <button type="submit" class="btn btn-outline-danger"
+                onclick="return confirm('Confirmer la suppression ?')">
+            <i class="bi bi-trash me-1"></i> Supprimer
+        </button>
+    </form>
+{% endblock %}
+
+{% block body %}
+<div class="row g-4">
+    {# Left: meta #}
+    <div class="col-lg-4">
+        <div class="card rounded-4 shadow-sm">
+            <div class="card-header bg-white fw-semibold">
+                <i class="bi bi-info-circle me-2 text-primary"></i> Informations
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Numéro</span>
+                    <span class="font-monospace fw-bold">{{ invoice.numero }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Statut</span>
+                    <span class="badge {{ invoice.statutBadgeClass }}">{{ invoice.statutLabel }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Client</span>
+                    <a href="{{ path('app_client_show', {id: invoice.client.id}) }}"
+                       class="text-decoration-none">{{ invoice.client.displayName }}</a>
+                </li>
+                {% if invoice.project %}
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Projet</span>
+                    <a href="{{ path('app_project_show', {id: invoice.project.id}) }}"
+                       class="text-decoration-none">{{ invoice.project.reference }}</a>
+                </li>
+                {% endif %}
+                {% if invoice.quote %}
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Devis d'origine</span>
+                    <a href="{{ path('app_quote_show', {id: invoice.quote.id}) }}"
+                       class="text-decoration-none">{{ invoice.quote.numero }}</a>
+                </li>
+                {% endif %}
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Date d'émission</span>
+                    <span>{{ invoice.dateEmission|date('d/m/Y') }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Échéance</span>
+                    <span class="{{ invoice.enRetard ? 'text-danger fw-semibold' : '' }}">
+                        {{ invoice.dateEcheance ? invoice.dateEcheance|date('d/m/Y') : '—' }}
+                    </span>
+                </li>
+                {% if invoice.datePaiement %}
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Date paiement</span>
+                    <span class="text-success fw-semibold">{{ invoice.datePaiement|date('d/m/Y') }}</span>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+
+        {# Totals #}
+        <div class="card rounded-4 shadow-sm mt-3">
+            <div class="card-header bg-white fw-semibold">
+                <i class="bi bi-calculator me-2 text-success"></i> Totaux
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Taux TVA</span>
+                    <span>{{ invoice.tauxTVA }}%</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Total HT</span>
+                    <span>{{ invoice.totalHT|number_format(2, ',', '.') }} €</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">TVA ({{ invoice.tauxTVA }}%)</span>
+                    <span>{{ invoice.totalTVA|number_format(2, ',', '.') }} €</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between fw-bold fs-5">
+                    <span>Total TTC</span>
+                    <span class="text-primary">{{ invoice.totalTTC|number_format(2, ',', '.') }} €</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    {# Right: lines #}
+    <div class="col-lg-8">
+        <div class="card rounded-4 shadow-sm">
+            <div class="card-header bg-white fw-semibold">
+                <i class="bi bi-receipt me-2"></i> {{ invoice.objet }}
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="min-width:220px;">Désignation</th>
+                                <th class="text-center">Qté</th>
+                                <th>Unité</th>
+                                <th class="text-end">Prix unitaire HT</th>
+                                <th class="text-end">Montant HT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for line in invoice.lines %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ line.designation }}</div>
+                                </td>
+                                <td class="text-center">{{ line.quantite|number_format(2, ',', '.') }}</td>
+                                <td>{{ line.unite ?? '—' }}</td>
+                                <td class="text-end">{{ line.prixUnitaireHT|number_format(2, ',', '.') }} €</td>
+                                <td class="text-end fw-semibold">{{ line.montantHT|number_format(2, ',', '.') }} €</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">Aucune ligne.</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="4" class="text-end text-muted">Total HT</td>
+                                <td class="text-end fw-semibold">{{ invoice.totalHT|number_format(2, ',', '.') }} €</td>
+                            </tr>
+                            <tr>
+                                <td colspan="4" class="text-end text-muted">TVA {{ invoice.tauxTVA }}%</td>
+                                <td class="text-end fw-semibold">{{ invoice.totalTVA|number_format(2, ',', '.') }} €</td>
+                            </tr>
+                            <tr class="fs-5">
+                                <td colspan="4" class="text-end fw-bold">Total TTC</td>
+                                <td class="text-end fw-bold text-primary">{{ invoice.totalTTC|number_format(2, ',', '.') }} €</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

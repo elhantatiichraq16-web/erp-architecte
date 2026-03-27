@@ -1,0 +1,538 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ project.reference }} — {{ project.nom }}{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{{ path('app_project_index') }}">Projets</a></li>
+    <li class="breadcrumb-item active">{{ project.reference }}</li>
+{% endblock %}
+
+{% block page_actions %}
+    <a href="{{ path('app_project_edit', {id: project.id}) }}" class="btn btn-outline-primary">
+        <i class="bi bi-pencil me-1"></i> Modifier
+    </a>
+    <form method="POST" action="{{ path('app_project_delete', {id: project.id}) }}" class="d-inline">
+        <input type="hidden" name="_token" value="{{ csrf_token('delete_project_' ~ project.id) }}">
+        <button type="submit" class="btn btn-outline-danger"
+                onclick="return confirm('Confirmer la suppression ?')">
+            <i class="bi bi-trash me-1"></i> Supprimer
+        </button>
+    </form>
+{% endblock %}
+
+{% block body %}
+{# ── Overall progress header ── #}
+<div class="card rounded-4 shadow-sm mb-4">
+    <div class="card-body py-3 px-4">
+        <div class="row align-items-center g-3">
+            <div class="col-auto">
+                <span class="badge {{ project.statutBadgeClass }} fs-6 px-3 py-2">
+                    {{ project.statutLabel }}
+                </span>
+            </div>
+            <div class="col">
+                <div class="fw-semibold text-muted small mb-1">Avancement global</div>
+                <div class="progress" style="height:14px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+                         id="globalProgress"
+                         style="width:{{ project.avancementGlobal }}%"
+                         aria-valuenow="{{ project.avancementGlobal }}"
+                         aria-valuemin="0" aria-valuemax="100">
+                        {{ project.avancementGlobal }}%
+                    </div>
+                </div>
+            </div>
+            <div class="col-auto text-end">
+                <div class="fs-3 fw-bold text-primary" id="globalPct">{{ project.avancementGlobal }}%</div>
+            </div>
+            <div class="col-12 col-md-auto d-flex gap-3 text-muted small">
+                <span><i class="bi bi-clock me-1"></i>{{ project.totalHeures|number_format(1, ',', '.') }} h</span>
+                <span><i class="bi bi-cash me-1"></i>{{ project.totalDepenses|number_format(2, ',', '.') }} €</span>
+                {% if project.dateDebut %}
+                    <span><i class="bi bi-calendar-event me-1"></i>{{ project.dateDebut|date('d/m/Y') }}</span>
+                {% endif %}
+                {% if project.dateFinPrevisionnelle %}
+                    <span><i class="bi bi-calendar-check me-1"></i>{{ project.dateFinPrevisionnelle|date('d/m/Y') }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{# ── Tabs ── #}
+<ul class="nav nav-tabs mb-3" id="projectTabs" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-details">
+            <i class="bi bi-info-circle me-1"></i> Détails
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-phases">
+            <i class="bi bi-list-check me-1"></i> Phases
+            <span class="badge bg-secondary ms-1">{{ project.phases|length }}</span>
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-heures">
+            <i class="bi bi-clock me-1"></i> Heures
+            <span class="badge bg-secondary ms-1">{{ project.timeEntries|length }}</span>
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-depenses">
+            <i class="bi bi-cash me-1"></i> Dépenses
+            <span class="badge bg-secondary ms-1">{{ project.expenses|length }}</span>
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-documents">
+            <i class="bi bi-folder me-1"></i> Documents
+            <span class="badge bg-secondary ms-1">{{ project.documents|length }}</span>
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-evenements">
+            <i class="bi bi-calendar me-1"></i> Événements
+            <span class="badge bg-secondary ms-1">{{ project.events|length }}</span>
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+
+    {# ── Détails ── #}
+    <div class="tab-pane fade show active" id="tab-details">
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card rounded-4 shadow-sm h-100">
+                    <div class="card-header bg-white fw-semibold">
+                        <i class="bi bi-building me-2 text-primary"></i> Informations projet
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Référence</span>
+                            <span class="font-monospace fw-semibold">{{ project.reference }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Client</span>
+                            <a href="{{ path('app_client_show', {id: project.client.id}) }}"
+                               class="text-decoration-none">{{ project.client.displayName }}</a>
+                        </li>
+                        {% if project.adresseChantier %}
+                        <li class="list-group-item">
+                            <div class="text-muted mb-1">Adresse chantier</div>
+                            <div>{{ project.adresseChantier }}</div>
+                        </li>
+                        {% endif %}
+                        {% if project.surface %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Surface</span>
+                            <span>{{ project.surface }} m²</span>
+                        </li>
+                        {% endif %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Créé le</span>
+                            <span>{{ project.createdAt|date('d/m/Y') }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card rounded-4 shadow-sm h-100">
+                    <div class="card-header bg-white fw-semibold">
+                        <i class="bi bi-graph-up me-2 text-success"></i> Budget & finances
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        {% if project.montantHonoraires %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Honoraires</span>
+                            <span class="fw-semibold">{{ project.montantHonoraires|number_format(2, ',', '.') }} €</span>
+                        </li>
+                        {% endif %}
+                        {% if project.budgetPrevisionnel %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Budget prévisionnel</span>
+                            <span class="fw-semibold">{{ project.budgetPrevisionnel|number_format(2, ',', '.') }} €</span>
+                        </li>
+                        {% endif %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Total dépenses</span>
+                            <span class="fw-semibold text-danger">{{ project.totalDepenses|number_format(2, ',', '.') }} €</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Total heures</span>
+                            <span class="fw-semibold">{{ project.totalHeures|number_format(1, ',', '.') }} h</span>
+                        </li>
+                        {% if budget is defined and budget %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span class="text-muted">Budget consommé</span>
+                            <span class="fw-semibold {{ budget.pourcentage > 90 ? 'text-danger' : 'text-success' }}">
+                                {{ budget.pourcentage ?? 0 }}%
+                            </span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            {% if project.notes %}
+            <div class="col-12">
+                <div class="card rounded-4 shadow-sm">
+                    <div class="card-header bg-white fw-semibold">
+                        <i class="bi bi-sticky me-2 text-warning"></i> Notes
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0" style="white-space:pre-wrap;">{{ project.notes }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {# ── Phases ── #}
+    <div class="tab-pane fade" id="tab-phases">
+        <div class="card rounded-4 shadow-sm">
+            <div class="card-body p-0">
+                {% if project.phases is empty %}
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-list-check fs-2 d-block mb-2"></i>
+                        Aucune phase définie pour ce projet.
+                    </div>
+                {% else %}
+                    <div class="list-group list-group-flush">
+                    {% for phase in project.phases %}
+                        <div class="list-group-item px-4 py-3"
+                             data-phase-id="{{ phase.id }}"
+                             data-project-id="{{ project.id }}">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div>
+                                    <span class="fw-semibold">{{ phase.phaseLabel }}</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-3">
+                                    <input type="number" min="0" max="100"
+                                           class="form-control form-control-sm phase-avancement-input"
+                                           style="width:72px;"
+                                           value="{{ phase.avancement }}"
+                                           data-phase-id="{{ phase.id }}"
+                                           data-project-id="{{ project.id }}">
+                                    <span class="text-muted small">%</span>
+                                </div>
+                            </div>
+                            <div class="progress" style="height:10px;">
+                                <div class="progress-bar bg-primary progress-bar-striped phase-progress-bar"
+                                     style="width:{{ phase.avancement }}%"
+                                     data-phase-id="{{ phase.id }}"></div>
+                            </div>
+                            {% if phase.dateDebut or phase.dateFin %}
+                            <div class="mt-2 small text-muted">
+                                {% if phase.dateDebut %}
+                                    <i class="bi bi-calendar-event me-1"></i>{{ phase.dateDebut|date('d/m/Y') }}
+                                {% endif %}
+                                {% if phase.dateFin %}
+                                    <span class="mx-2">→</span>
+                                    <i class="bi bi-calendar-check me-1"></i>{{ phase.dateFin|date('d/m/Y') }}
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# ── Heures ── #}
+    <div class="tab-pane fade" id="tab-heures">
+        <div class="card rounded-4 shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-semibold"><i class="bi bi-clock me-2"></i>Saisies de temps</span>
+                <a href="{{ path('app_time_new') }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-lg me-1"></i> Nouvelle saisie
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Collaborateur</th>
+                                <th>Phase</th>
+                                <th class="text-end">Heures</th>
+                                <th>Description</th>
+                                <th class="text-center">Facturable</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for entry in project.timeEntries %}
+                            <tr>
+                                <td>{{ entry.date|date('d/m/Y') }}</td>
+                                <td>{{ entry.collaborator }}</td>
+                                <td>{{ entry.phase ?? '—' }}</td>
+                                <td class="text-end fw-semibold">{{ entry.heures|number_format(2, ',', '.') }}</td>
+                                <td class="text-muted">{{ entry.description ?? '—' }}</td>
+                                <td class="text-center">
+                                    {% if entry.facturable %}
+                                        <i class="bi bi-check-circle-fill text-success"></i>
+                                    {% else %}
+                                        <i class="bi bi-x-circle text-muted"></i>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ path('app_time_edit', {id: entry.id}) }}"
+                                       class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                                    <form method="POST"
+                                          action="{{ path('app_time_delete', {id: entry.id}) }}"
+                                          class="d-inline">
+                                        <input type="hidden" name="_token"
+                                               value="{{ csrf_token('delete_time_entry_' ~ entry.id) }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                onclick="return confirm('Confirmer la suppression ?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">Aucune saisie de temps.</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                        {% if project.timeEntries|length > 0 %}
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="3" class="fw-semibold">Total</td>
+                                <td class="text-end fw-bold">{{ project.totalHeures|number_format(2, ',', '.') }} h</td>
+                                <td colspan="3"></td>
+                            </tr>
+                        </tfoot>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Dépenses ── #}
+    <div class="tab-pane fade" id="tab-depenses">
+        <div class="card rounded-4 shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-semibold"><i class="bi bi-cash me-2"></i>Dépenses</span>
+                <a href="{{ path('app_expense_new') }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-lg me-1"></i> Nouvelle dépense
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Catégorie</th>
+                                <th class="text-end">Montant</th>
+                                <th>Description</th>
+                                <th>Fournisseur</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for expense in project.expenses %}
+                            <tr>
+                                <td>{{ expense.date|date('d/m/Y') }}</td>
+                                <td>
+                                    <span class="badge bg-info text-dark">{{ expense.categorieLabel }}</span>
+                                </td>
+                                <td class="text-end fw-semibold">
+                                    {{ expense.montant|number_format(2, ',', '.') }} €
+                                </td>
+                                <td class="text-muted">{{ expense.description ?? '—' }}</td>
+                                <td>{{ expense.fournisseur ?? '—' }}</td>
+                                <td class="text-end">
+                                    <a href="{{ path('app_expense_edit', {id: expense.id}) }}"
+                                       class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                                    <form method="POST"
+                                          action="{{ path('app_expense_delete', {id: expense.id}) }}"
+                                          class="d-inline">
+                                        <input type="hidden" name="_token"
+                                               value="{{ csrf_token('delete_expense_' ~ expense.id) }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                onclick="return confirm('Confirmer la suppression ?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">Aucune dépense.</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                        {% if project.expenses|length > 0 %}
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="2" class="fw-semibold">Total</td>
+                                <td class="text-end fw-bold">{{ project.totalDepenses|number_format(2, ',', '.') }} €</td>
+                                <td colspan="3"></td>
+                            </tr>
+                        </tfoot>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Documents ── #}
+    <div class="tab-pane fade" id="tab-documents">
+        <div class="card rounded-4 shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-semibold"><i class="bi bi-folder me-2"></i>Documents</span>
+                <a href="{{ path('app_document_new') }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-lg me-1"></i> Nouveau document
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nom</th>
+                                <th>Catégorie</th>
+                                <th>Version</th>
+                                <th>Date</th>
+                                <th class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for document in project.documents %}
+                            <tr>
+                                <td>
+                                    <i class="bi bi-file-earmark me-1 text-muted"></i>
+                                    {{ document.nom }}
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ document.categorieLabel }}</span>
+                                </td>
+                                <td>{{ document.version ?? '—' }}</td>
+                                <td>{{ document.createdAt|date('d/m/Y') }}</td>
+                                <td class="text-end">
+                                    <a href="{{ path('app_document_edit', {id: document.id}) }}"
+                                       class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                                    <form method="POST"
+                                          action="{{ path('app_document_delete', {id: document.id}) }}"
+                                          class="d-inline">
+                                        <input type="hidden" name="_token"
+                                               value="{{ csrf_token('delete_document_' ~ document.id) }}">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                onclick="return confirm('Confirmer la suppression ?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">Aucun document.</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Événements ── #}
+    <div class="tab-pane fade" id="tab-evenements">
+        <div class="card rounded-4 shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <span class="fw-semibold"><i class="bi bi-calendar me-2"></i>Événements</span>
+                <a href="{{ path('app_event_new') }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-lg me-1"></i> Nouvel événement
+                </a>
+            </div>
+            <div class="card-body">
+                {% if project.events is empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-calendar-x fs-2 d-block mb-2"></i>
+                        Aucun événement pour ce projet.
+                    </div>
+                {% else %}
+                    <div class="list-group list-group-flush">
+                    {% for event in project.events %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="rounded-3 p-2 text-white text-center flex-shrink-0"
+                                     style="background-color:{{ event.couleur ?? '#3B82F6' }};min-width:52px;">
+                                    <div class="fw-bold">{{ event.dateDebut|date('d') }}</div>
+                                    <div class="small text-uppercase">{{ event.dateDebut|date('M') }}</div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-semibold">{{ event.titre }}</div>
+                                    <div class="small text-muted">
+                                        {{ event.typeLabel }}
+                                        {% if event.lieu %} · {{ event.lieu }}{% endif %}
+                                        · {{ event.dateDebut|date('H:i') }}
+                                        {% if event.dateFin %} — {{ event.dateFin|date('H:i') }}{% endif %}
+                                    </div>
+                                    {% if event.description %}
+                                        <p class="mb-0 mt-1 text-muted small">{{ event.description }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>{# /tab-content #}
+{% endblock %}
+
+{% block javascripts %}
+{{ parent() }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const inputs = document.querySelectorAll('.phase-avancement-input');
+    inputs.forEach(function (input) {
+        input.addEventListener('change', function () {
+            const phaseId   = this.dataset.phaseId;
+            const projectId = this.dataset.projectId;
+            const val       = parseInt(this.value, 10);
+            if (isNaN(val) || val < 0 || val > 100) return;
+
+            fetch(`/projects/${projectId}/phases/${phaseId}/update`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+                body: JSON.stringify({avancement: val})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    // Update phase progress bar
+                    const bar = document.querySelector(`.phase-progress-bar[data-phase-id="${phaseId}"]`);
+                    if (bar) bar.style.width = data.avancement + '%';
+
+                    // Update global progress
+                    const globalBar = document.getElementById('globalProgress');
+                    const globalPct = document.getElementById('globalPct');
+                    if (globalBar) {
+                        globalBar.style.width = data.avancementGlobal + '%';
+                        globalBar.textContent  = data.avancementGlobal + '%';
+                        globalBar.setAttribute('aria-valuenow', data.avancementGlobal);
+                    }
+                    if (globalPct) globalPct.textContent = data.avancementGlobal + '%';
+                }
+            })
+            .catch(err => console.error('Erreur AJAX phase:', err));
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,87 @@
+{{ form_start(form, {attr: {novalidate: 'novalidate', class: 'needs-validation'}}) }}
+
+<div class="row g-3">
+    {# Contact #}
+    <div class="col-12">
+        <h6 class="text-uppercase text-muted fw-semibold small mb-3">
+            <i class="bi bi-person me-1"></i> Informations de contact
+        </h6>
+    </div>
+
+    <div class="col-md-4">
+        {{ form_label(form.nom, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.nom, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.nom) }}
+    </div>
+
+    <div class="col-md-4">
+        {{ form_label(form.prenom, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.prenom, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.prenom) }}
+    </div>
+
+    <div class="col-md-4">
+        {{ form_label(form.societe, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.societe, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.societe) }}
+    </div>
+
+    <div class="col-md-6">
+        {{ form_label(form.email, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.email, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.email) }}
+    </div>
+
+    <div class="col-md-6">
+        {{ form_label(form.telephone, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.telephone, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.telephone) }}
+    </div>
+
+    {# Address #}
+    <div class="col-12 mt-2">
+        <h6 class="text-uppercase text-muted fw-semibold small mb-3">
+            <i class="bi bi-geo-alt me-1"></i> Adresse
+        </h6>
+    </div>
+
+    <div class="col-12">
+        {{ form_label(form.adresse, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.adresse, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.adresse) }}
+    </div>
+
+    <div class="col-md-4">
+        {{ form_label(form.codePostal, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.codePostal, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.codePostal) }}
+    </div>
+
+    <div class="col-md-8">
+        {{ form_label(form.ville, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.ville, {attr: {class: 'form-control'}}) }}
+        {{ form_errors(form.ville) }}
+    </div>
+
+    {# Legal #}
+    <div class="col-12 mt-2">
+        <h6 class="text-uppercase text-muted fw-semibold small mb-3">
+            <i class="bi bi-building me-1"></i> Informations légales
+        </h6>
+    </div>
+
+    <div class="col-md-6">
+        {{ form_label(form.siret, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.siret, {attr: {class: 'form-control font-monospace'}}) }}
+        {{ form_errors(form.siret) }}
+    </div>
+
+    {# Notes #}
+    <div class="col-12 mt-2">
+        {{ form_label(form.notes, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
+        {{ form_widget(form.notes, {attr: {class: 'form-control', rows: 4}}) }}
+        {{ form_errors(form.notes) }}
+    </div>
+</div>
+
+{{ form_end(form) }}

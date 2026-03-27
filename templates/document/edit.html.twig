@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Modifier document — {{ document.nom }}{% endblock %}
+
+{% block breadcrumb %}
+    <li class="breadcrumb-item"><a href="{{ path('app_document_index') }}">Documents</a></li>
+    <li class="breadcrumb-item active">Modifier</li>
+{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-xl-7">
+        <div class="card rounded-4 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-semibold">
+                    <i class="bi bi-pencil me-2 text-primary"></i> Modifier — {{ document.nom }}
+                </h5>
+            </div>
+            <div class="card-body p-4">
+                {% include 'document/_form.html.twig' %}
+            </div>
+            <div class="card-footer bg-white border-top d-flex justify-content-between py-3 px-4">
+                <a href="{{ path('app_document_index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> Annuler
+                </a>
+                <div class="d-flex gap-2">
+                    <form method="POST"
+                          action="{{ path('app_document_delete', {id: document.id}) }}"
+                          class="d-inline">
+                        <input type="hidden" name="_token"
+                               value="{{ csrf_token('delete_document_' ~ document.id) }}">
+                        <button type="submit" class="btn btn-outline-danger"
+                                onclick="return confirm('Confirmer la suppression ?')">
+                            <i class="bi bi-trash me-1"></i> Supprimer
+                        </button>
+                    </form>
+                    <button type="submit" form="{{ form.vars.id }}" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i> Enregistrer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
